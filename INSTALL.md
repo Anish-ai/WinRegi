@@ -5,36 +5,58 @@ WinRegi is an AI-powered Windows Registry Manager designed to simplify Windows s
 ## System Requirements
 
 - Windows 10 or Windows 11
-- Python 3.8 or higher
 - Administrator privileges (for registry modifications)
 
-## Installation Steps
+## Installation - Easy Method (Recommended)
 
-### 1. Clone the Repository
+1. Download the latest release from the [Releases](https://github.com/winregi/winregi/releases) page
+2. Run the installer 
+3. Follow the on-screen instructions
+
+The application will automatically request administrator privileges when needed.
+
+## Installation from Source
+
+### 1. Requirements
+
+- Python 3.8 or higher
+- Git
+
+### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/winregi/winregi.git
 cd winregi
 ```
 
-### 2. Create a Virtual Environment
+### 3. Create a Virtual Environment
 
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+### 4. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Run the Application
+### 5. Run the Application
 
 ```bash
 python main.py
 ```
+
+### 6. Building an Executable (Optional)
+
+To build a standalone executable:
+
+```bash
+python build_exe.py
+```
+
+This will create a `dist/WinRegi` directory containing the executable and all necessary files.
 
 ## Installation for Developers
 
@@ -66,6 +88,14 @@ This installs the package in development mode, allowing you to make changes to t
 pytest tests
 ```
 
+## Features
+
+- **Light/Dark Mode**: Toggle between light and dark themes with smooth transitions
+- **Custom Commands Management**: Create, edit, and execute custom commands
+- **AI-Powered Search**: Find Windows settings using natural language
+- **Registry Management**: View and modify Windows Registry settings safely
+- **Administrator Mode**: Automatically runs with admin privileges for full functionality
+
 ## Troubleshooting
 
 ### Missing Dependencies
@@ -81,9 +111,8 @@ pip install --upgrade -r requirements.txt
 WinRegi requires administrator privileges to modify Windows Registry settings. If you encounter permission issues:
 
 1. Close the application
-2. Right-click on the command prompt or PowerShell
+2. Right-click on the WinRegi shortcut or executable
 3. Select "Run as administrator"
-4. Navigate to the WinRegi directory and run the application again
 
 ### PyQt Installation Issues
 
@@ -95,6 +124,12 @@ pip install PyQt5
 ```
 
 ## Uninstallation
+
+### Executable Version
+
+Use the Windows Control Panel > Programs > Uninstall a program
+
+### Source Installation
 
 To uninstall WinRegi:
 

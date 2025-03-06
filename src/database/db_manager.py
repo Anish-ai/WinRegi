@@ -4,10 +4,12 @@ Handles database connections, queries, and data management
 """
 import os
 import sqlite3
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 
-from .schema import SCHEMA, DEFAULT_CATEGORIES, DEFAULT_ACCESS_METHODS, SAMPLE_SETTINGS, SAMPLE_ACTIONS
+from .schema import SCHEMA, DEFAULT_CATEGORIES, DEFAULT_ACCESS_METHODS, SAMPLE_SETTINGS, SAMPLE_ACTIONS, SAMPLE_COMMANDS
 
 class DatabaseManager:
     """Manages database operations for the WinRegi application"""
@@ -90,6 +92,17 @@ class DatabaseManager:
                    (id, setting_id, name, description, action_type, action_value, is_default)
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 SAMPLE_ACTIONS
+            )
+            self.conn.commit()
+            
+        # Populate sample commands if empty
+        self.cursor.execute("SELECT COUNT(*) FROM custom_commands")
+        if self.cursor.fetchone()[0] == 0:
+            self.cursor.executemany(
+                """INSERT INTO custom_commands 
+                   (id, name, description, command_type, command_value)
+                   VALUES (?, ?, ?, ?, ?)""",
+                SAMPLE_COMMANDS
             )
             self.conn.commit()
             
@@ -244,3 +257,164 @@ class DatabaseManager:
         """, (limit,))
         
         return [dict(row) for row in self.cursor.fetchall()]
+    
+    # Custom Commands Management
+    
+    def get_all_commands(self) -> List[Dict[str, Any]]:
+        """Get all custom commands
+        
+        Returns:
+            List of command dictionaries
+        """
+        if not self.conn:
+            self.connect()
+            
+        self.cursor.execute("""
+            SELECT id, name, description, command_type, command_value, created_at, last_used
+            FROM custom_commands
+            ORDER BY name
+        """)
+        
+        return [dict(row) for row in self.cursor.fetchall()]
+    
+    def get_command_by_id(self, command_id: int) -> Optional[Dict[str, Any]]:
+        """Get a specific command by ID
+        
+        Args:
+            command_id: ID of the command to retrieve
+            
+        Returns:
+            Dictionary containing command details or None if not found
+        """
+        if not self.conn:
+            self.connect()
+            
+        self.cursor.execute("""
+            SELECT id, name, description, command_type, command_value, created_at, last_used
+            FROM custom_commands
+            WHERE id = ?
+        """, (command_id,))
+        
+        row = self.cursor.fetchone()
+        return dict(row) if row else None
+    
+    def add_command(self, name: str, description: str, command_type: str, command_value: str) -> int:
+        """Add a new custom command
+        
+        Args:
+            name: Command name
+            description: Command description
+            command_type: Type of command (system, powershell, etc.)
+            command_value: Actual command to execute
+            
+        Returns:
+            ID of the newly added command
+        """
+        if not self.conn:
+            self.connect()
+            
+        self.cursor.execute("""
+            INSERT INTO custom_commands (name, description, command_type, command_value)
+            VALUES (?, ?, ?, ?)
+        """, (name, description, command_type, command_value))
+        
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
+    def update_command(self, command_id: int, name: str, description: str, command_type: str, command_value: str) -> bool:
+        """Update an existing custom command
+        
+        Args:
+            command_id: ID of the command to update
+            name: New command name
+            description: New command description
+            command_type: New command type
+            command_value: New command value
+            
+        Returns:
+            True if the command was updated, False otherwise
+        """
+        if not self.conn:
+            self.connect()
+            
+        self.cursor.execute("""
+            UPDATE custom_commands
+            SET name = ?, description = ?, command_type = ?, command_value = ?
+            WHERE id = ?
+        """, (name, description, command_type, command_value, command_id))
+        
+        self.conn.commit()
+        return self.cursor.rowcount > 0
+    
+    def delete_command(self, command_id: int) -> bool:
+        """Delete a custom command
+        
+        Args:
+            command_id: ID of the command to delete
+            
+        Returns:
+            True if the command was deleted, False otherwise
+        """
+        if not self.conn:
+            self.connect()
+            
+        self.cursor.execute("DELETE FROM custom_commands WHERE id = ?", (command_id,))
+        
+        self.conn.commit()
+        return self.cursor.rowcount > 0
+    
+    def update_command_usage(self, command_id: int) -> bool:
+        """Update the last used timestamp for a command
+        
+        Args:
+            command_id: ID of the command that was used
+            
+        Returns:
+            True if the timestamp was updated, False otherwise
+        """
+        if not self.conn:
+            self.connect()
+            
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        self.cursor.execute("""
+            UPDATE custom_commands
+            SET last_used = ?
+            WHERE id = ?
+        """, (current_time, command_id))
+        
+        self.conn.commit()
+        return self.cursor.rowcount > 0
+    
+    def search_commands(self, query: str) -> List[Dict[str, Any]]:
+        """Search for commands matching the given query
+        
+        Args:
+            query: Search string
+            
+        Returns:
+            List of matching command dictionaries
+        """
+        if not self.conn:
+            self.connect()
+            
+        # Simple search implementation using SQL LIKE
+        search_terms = query.lower().split()
+        results = []
+        
+        for term in search_terms:
+            like_pattern = f"%{term}%"
+            self.cursor.execute("""
+                SELECT id, name, description, command_type, command_value, created_at, last_used
+                FROM custom_commands
+                WHERE LOWER(name) LIKE ? 
+                   OR LOWER(description) LIKE ? 
+                   OR LOWER(command_value) LIKE ?
+            """, (like_pattern, like_pattern, like_pattern))
+            
+            for row in self.cursor.fetchall():
+                result = dict(row)
+                if result not in results:
+                    results.append(result)
+        
+        return results

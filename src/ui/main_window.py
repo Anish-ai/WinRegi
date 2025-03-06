@@ -15,7 +15,8 @@ from ..windows_api.settings_manager import SettingsManager
 from .search_page import SearchPage
 from .settings_page import SettingsPage
 from .setting_detail import SettingDetailPage
-from .theme_manager import ThemeManager
+from .commands_page import CommandsPage
+from .theme_manager import ThemeManager, ThemeToggleSwitch
 
 class MainWindow(QMainWindow):
     """Main application window"""
@@ -50,8 +51,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(window_title)
         self.resize(1024, 768)
         
-        # Apply initial theme
-        self.theme_manager.apply_theme("light")
+        # Apply initial theme - load from saved config
+        self.theme_manager.apply_theme(self.theme_manager.current_theme)
     
     def init_ui(self):
         """Initialize user interface"""
@@ -147,18 +148,15 @@ class MainWindow(QMainWindow):
         admin_layout.addWidget(admin_icon)
         admin_layout.addWidget(admin_text)
         
-        # Theme toggle button
-        theme_button = QPushButton()
-        theme_button.setObjectName("theme-button")
-        theme_button.setToolTip("Toggle theme")
-        theme_button.setFixedSize(32, 32)
-        theme_button.clicked.connect(self.toggle_theme)
+        # Create theme toggle switch
+        theme_container = self.theme_manager.create_theme_toggle(self)
+        theme_container.setToolTip("Toggle between light and dark mode")
         
         # Add widgets to layout
         header_layout.addWidget(logo_title_container)
         header_layout.addWidget(spacer)
         header_layout.addWidget(admin_indicator)
-        header_layout.addWidget(theme_button)
+        header_layout.addWidget(theme_container)
         
         return header
     
@@ -181,10 +179,14 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage(self.db_manager, self.settings_manager)
         tab_widget.addTab(self.settings_page, "Categories")
         
+        # Create commands page
+        self.commands_page = CommandsPage(self.db_manager)
+        tab_widget.addTab(self.commands_page, "Commands")
+        
         # Create detail page
         self.detail_page = SettingDetailPage(self.db_manager, self.settings_manager)
         tab_widget.addTab(self.detail_page, "Setting Details")
-        tab_widget.setTabVisible(2, False)  # Hide detail tab until needed
+        tab_widget.setTabVisible(3, False)  # Hide detail tab until needed (now index 3 because we added commands)
         
         # Connect signals
         self.search_page.setting_selected.connect(self.show_setting_detail)
@@ -203,8 +205,8 @@ class MainWindow(QMainWindow):
         
         # Show detail tab
         tab_widget = self.findChild(QTabWidget, "main-tabs")
-        tab_widget.setTabVisible(2, True)
-        tab_widget.setCurrentIndex(2)
+        tab_widget.setTabVisible(3, True)  # Now detail tab is at index 3
+        tab_widget.setCurrentIndex(3)
     
     def toggle_theme(self):
         """Toggle between light and dark themes"""

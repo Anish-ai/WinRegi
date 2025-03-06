@@ -74,6 +74,17 @@ CREATE TABLE IF NOT EXISTS search_history (
     query TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Custom Commands Table
+CREATE TABLE IF NOT EXISTS custom_commands (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    command_type TEXT NOT NULL,
+    command_value TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP
+);
 """
 
 # Predefined categories for settings
@@ -88,7 +99,8 @@ DEFAULT_CATEGORIES = [
     (8, "Time & Language", "Regional and language settings", "time_language.png"),
     (9, "Gaming", "Game-related settings", "gaming.png"),
     (10, "Accessibility", "Ease of access settings", "accessibility.png"),
-    (11, "Update & Security", "Windows Update and security", "update_security.png")
+    (11, "Update & Security", "Windows Update and security", "update_security.png"),
+    (12, "Commands", "Custom commands and shortcuts", "commands.png")
 ]
 
 # Predefined access methods
@@ -179,4 +191,13 @@ SAMPLE_ACTIONS = [
     (9, 4, "Disable Metered Connection", "Set connection as non-metered", "registry", 
      r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultMediaCost\3=1", 
      0)
+]
+
+# Sample custom commands
+SAMPLE_COMMANDS = [
+    (1, "Open Task Manager", "Quickly access Windows Task Manager", "system", "taskmgr.exe"),
+    (2, "Clear Temp Files", "Remove temporary files to free disk space", "powershell", 
+     "Remove-Item -Path \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue"),
+    (3, "Check Disk Space", "Display available disk space", "powershell", 
+     "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Free (GB)';Expression={[math]::Round($_.Free / 1GB, 2)}}, @{Name='Used (GB)';Expression={[math]::Round(($_.Used) / 1GB, 2)}}")
 ]
