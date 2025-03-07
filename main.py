@@ -8,6 +8,7 @@ import os
 import ctypes
 import traceback
 import time
+import subprocess
 from PyQt5.QtWidgets import QApplication, QMessageBox, QSplashScreen
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
@@ -87,6 +88,16 @@ def main():
         if run_as_admin():
             # Elevation was requested, close this instance
             sys.exit(0)
+    
+    # Run pre-startup checks and initialization
+    pre_startup_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pre_startup.py")
+    if os.path.exists(pre_startup_script):
+        try:
+            subprocess.run([sys.executable, pre_startup_script], check=True)
+        except subprocess.CalledProcessError:
+            print("WARNING: Pre-startup initialization failed!")
+        except Exception as e:
+            print(f"Error running pre-startup: {e}")
     
     # Set up environment
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"

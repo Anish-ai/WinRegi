@@ -1,0 +1,103 @@
+/* Modern UI Styles */
+
+/* Main window and container */
+#main-window {
+    background-color: transparent;
+}
+
+#app-container {
+    border-radius: 15px;
+}
+
+/* Custom window controls */
+#window-controls {
+    background-color: transparent;
+}
+
+#minimize-btn, #maximize-btn, #close-btn {
+    background-color: transparent;
+    border-radius: 12px;
+    color: #888;
+    font-weight: bold;
+    box-shadow: none;
+    padding: 0;
+}
+
+#minimize-btn:hover, #maximize-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+#close-btn:hover {
+    background-color: #ff5252;
+    color: white;
+}
+
+/* Header search bar */
+#header-search-container {
+    border-radius: 20px;
+    transition: all 0.3s;
+}
+
+#header-search-container:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+#header-search-button {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    font-size: 13px;
+    box-shadow: none;
+    padding: 8px;
+}
+
+/* Sidebar navigation */
+#sidebar-nav {
+    border-top-left-radius: 15px;
+    border-bottom-left-radius: 15px;
+}
+
+#sidebar-toggle {
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#sidebar-toggle:hover {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+#nav-button {
+    background-color: transparent;
+    border-radius: 10px;
+    text-align: left;
+    padding: 10px 15px;
+    margin: 3px 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+}
+
+#nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#settings-button {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* Content area */
+#content-area {
+    background-color: transparent;
+}
+
+/* Status bar */
+#status-bar {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}

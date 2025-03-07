@@ -82,8 +82,11 @@ CREATE TABLE IF NOT EXISTS custom_commands (
     description TEXT,
     command_type TEXT NOT NULL,
     command_value TEXT NOT NULL,
+    category_id INTEGER,
+    tags TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_used TIMESTAMP
+    last_used TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 """
 
@@ -100,7 +103,11 @@ DEFAULT_CATEGORIES = [
     (9, "Gaming", "Game-related settings", "gaming.png"),
     (10, "Accessibility", "Ease of access settings", "accessibility.png"),
     (11, "Update & Security", "Windows Update and security", "update_security.png"),
-    (12, "Commands", "Custom commands and shortcuts", "commands.png")
+    (12, "Commands", "Custom commands and shortcuts", "commands.png"),
+    (13, "Utilities", "Utility and maintenance tools", "utilities.png"),
+    (14, "Performance", "Performance optimization tools", "performance.png"),
+    (15, "Cleanup", "System cleanup tools", "cleanup.png"),
+    (16, "Networking", "Network management tools", "networking.png")
 ]
 
 # Predefined access methods
@@ -195,9 +202,9 @@ SAMPLE_ACTIONS = [
 
 # Sample custom commands
 SAMPLE_COMMANDS = [
-    (1, "Open Task Manager", "Quickly access Windows Task Manager", "system", "taskmgr.exe"),
+    (1, "Open Task Manager", "Quickly access Windows Task Manager", "system", "taskmgr.exe", 12, "task manager,processes,performance"),
     (2, "Clear Temp Files", "Remove temporary files to free disk space", "powershell", 
-     "Remove-Item -Path \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue"),
+     "Remove-Item -Path \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue", 15, "cleanup,disk space,temporary files"),
     (3, "Check Disk Space", "Display available disk space", "powershell", 
-     "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Free (GB)';Expression={[math]::Round($_.Free / 1GB, 2)}}, @{Name='Used (GB)';Expression={[math]::Round(($_.Used) / 1GB, 2)}}")
+     "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Free (GB)';Expression={[math]::Round($_.Free / 1GB, 2)}}, @{Name='Used (GB)';Expression={[math]::Round(($_.Used) / 1GB, 2)}}", 14, "disk space,storage,drive")
 ]

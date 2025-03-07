@@ -1,15 +1,186 @@
 """
-Setting card widget for WinRegi application
+Modern setting card widget for WinRegi application with animations and effects
 """
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, 
-    QVBoxLayout, QFrame, QSizePolicy
+    QVBoxLayout, QFrame, QSizePolicy, QGraphicsDropShadowEffect,
+    QGraphicsOpacityEffect
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import (
+    Qt, pyqtSignal, QSize, QPropertyAnimation, 
+    QEasingCurve, QTimer, QRect, QPoint
+)
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QFont, QPainter, QPainterPath
+
+class AnimatedButton(QPushButton):
+    """Button with hover, press and click animations"""
+    
+    def __init__(self, text="", parent=None):
+        """Initialize animated button
+        
+        Args:
+            text: Button text
+            parent: Parent widget
+        """
+        super().__init__(text, parent)
+        
+        # Set cursor to pointing hand
+        self.setCursor(Qt.PointingHandCursor)
+        
+        # Initialize state
+        self._scale_factor = 1.0
+        self._hover_opacity = 0.0
+        self._is_pressed = False
+        
+        # Create scale animation
+        self._scale_animation = QPropertyAnimation(self, b"scale_factor")
+        self._scale_animation.setDuration(100)
+        self._scale_animation.setEasingCurve(QEasingCurve.OutCubic)
+        
+        # Create hover animation
+        self._hover_animation = QPropertyAnimation(self, b"hover_opacity")
+        self._hover_animation.setDuration(150)
+        self._hover_animation.setEasingCurve(QEasingCurve.InOutQuad)
+    
+    def get_scale_factor(self):
+        """Get scale factor property
+        
+        Returns:
+            Current scale factor
+        """
+        return self._scale_factor
+    
+    def set_scale_factor(self, factor):
+        """Set scale factor property
+        
+        Args:
+            factor: New scale factor
+        """
+        self._scale_factor = factor
+        self.update()
+    
+    # Define property for scale animation
+    scale_factor = property(get_scale_factor, set_scale_factor)
+    
+    def get_hover_opacity(self):
+        """Get hover opacity property
+        
+        Returns:
+            Current hover opacity
+        """
+        return self._hover_opacity
+    
+    def set_hover_opacity(self, opacity):
+        """Set hover opacity property
+        
+        Args:
+            opacity: New hover opacity
+        """
+        self._hover_opacity = opacity
+        self.update()
+    
+    # Define property for hover animation
+    hover_opacity = property(get_hover_opacity, set_hover_opacity)
+    
+    def enterEvent(self, event):
+        """Handle mouse enter event
+        
+        Args:
+            event: Enter event
+        """
+        # Start hover animation
+        self._hover_animation.stop()
+        self._hover_animation.setStartValue(self._hover_opacity)
+        self._hover_animation.setEndValue(1.0)
+        self._hover_animation.start()
+        
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Handle mouse leave event
+        
+        Args:
+            event: Leave event
+        """
+        # Start hover animation
+        self._hover_animation.stop()
+        self._hover_animation.setStartValue(self._hover_opacity)
+        self._hover_animation.setEndValue(0.0)
+        self._hover_animation.start()
+        
+        super().leaveEvent(event)
+    
+    def mousePressEvent(self, event):
+        """Handle mouse press event
+        
+        Args:
+            event: Mouse event
+        """
+        if event.button() == Qt.LeftButton:
+            self._is_pressed = True
+            
+            # Start press animation
+            self._scale_animation.stop()
+            self._scale_animation.setStartValue(self._scale_factor)
+            self._scale_animation.setEndValue(0.95)
+            self._scale_animation.start()
+        
+        super().mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release event
+        
+        Args:
+            event: Mouse event
+        """
+        if event.button() == Qt.LeftButton and self._is_pressed:
+            self._is_pressed = False
+            
+            # Start release animation
+            self._scale_animation.stop()
+            self._scale_animation.setStartValue(self._scale_factor)
+            self._scale_animation.setEndValue(1.0)
+            self._scale_animation.start()
+        
+        super().mouseReleaseEvent(event)
+    
+    def paintEvent(self, event):
+        """Custom paint event with animation effects
+        
+        Args:
+            event: Paint event
+        """
+        # Create painter
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Save state
+        painter.save()
+        
+        # Apply scale transform if pressed
+        painter.translate(self.rect().center())
+        painter.scale(self._scale_factor, self._scale_factor)
+        painter.translate(-self.rect().center())
+        
+        # Draw button (base class implementation)
+        super().paintEvent(event)
+        
+        # Draw hover overlay if hovered
+        if self._hover_opacity > 0:
+            # Create a semi-transparent overlay
+            painter.setOpacity(self._hover_opacity * 0.1)
+            
+            if self.property("class") == "primary-action":
+                painter.fillRect(self.rect(), QColor("#ffffff"))
+            else:
+                # Different hover effect for secondary buttons
+                painter.fillRect(self.rect(), QColor("#000000"))
+        
+        # Restore state
+        painter.restore()
 
 class SettingCard(QFrame):
-    """Card widget displaying a Windows setting"""
+    """Modern card widget displaying a Windows setting with animations"""
     
     # Signal emitted when card is clicked
     clicked = pyqtSignal(int)
@@ -44,13 +215,86 @@ class SettingCard(QFrame):
         self.setObjectName("setting-card")
         self.setProperty("class", "setting-card")
         
-        # Add mouse tracking
+        # Add shadow effect
+        self.shadow = QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setColor(QColor(0, 0, 0, 40))
+        self.shadow.setOffset(0, 3)
+        self.setGraphicsEffect(self.shadow)
+        
+        # Add mouse tracking for hover effects
         self.setMouseTracking(True)
+        
+        # Initialize animation properties
+        self._hover_state = 0.0
+        self._y_offset = 0.0
+        
+        # Create hover animation
+        self._hover_animation = QPropertyAnimation(self, b"hover_state")
+        self._hover_animation.setDuration(200)
+        self._hover_animation.setEasingCurve(QEasingCurve.InOutQuad)
+        
+        # Create elevation animation
+        self._elevation_animation = QPropertyAnimation(self, b"y_offset")
+        self._elevation_animation.setDuration(200)
+        self._elevation_animation.setEasingCurve(QEasingCurve.OutCubic)
+    
+    def get_hover_state(self):
+        """Get hover state property
+        
+        Returns:
+            Current hover state
+        """
+        return self._hover_state
+    
+    def set_hover_state(self, state):
+        """Set hover state property
+        
+        Args:
+            state: New hover state
+        """
+        self._hover_state = state
+        
+        # Update shadow blur radius and color based on hover state
+        self.shadow.setBlurRadius(15 + self._hover_state * 10)
+        
+        # Interpolate shadow opacity
+        base_opacity = 40
+        hover_opacity = 80
+        opacity = int(base_opacity + self._hover_state * (hover_opacity - base_opacity))
+        self.shadow.setColor(QColor(0, 0, 0, opacity))
+        
+        self.update()
+    
+    # Define property for hover animation
+    hover_state = property(get_hover_state, set_hover_state)
+    
+    def get_y_offset(self):
+        """Get Y offset property
+        
+        Returns:
+            Current Y offset
+        """
+        return self._y_offset
+    
+    def set_y_offset(self, offset):
+        """Set Y offset property
+        
+        Args:
+            offset: New Y offset
+        """
+        # Store value and convert to int if needed
+        self._y_offset = offset
+        offset = int(offset)
+        
+        # Apply offset transform by moving the widget
+        self.move(self.x(), self.y() - offset)
+    
+    # Define property for elevation animation
+    y_offset = property(get_y_offset, set_y_offset)
     
     def init_ui(self):
         """Initialize user interface"""
-        from PyQt5.QtGui import QFont, QIcon
-        
         # Create layout
         layout = QHBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -97,11 +341,7 @@ class SettingCard(QFrame):
         # Setting name with custom font
         self.name_label = QLabel(self.setting_name)
         self.name_label.setObjectName("setting-name")
-        
-        name_font = QFont()
-        name_font.setPointSize(12)
-        name_font.setBold(True)
-        self.name_label.setFont(name_font)
+        self.name_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
         
         content_layout.addWidget(self.name_label)
         
@@ -110,10 +350,7 @@ class SettingCard(QFrame):
             self.description_label = QLabel(self.setting_description)
             self.description_label.setObjectName("setting-description")
             self.description_label.setWordWrap(True)
-            
-            desc_font = QFont()
-            desc_font.setPointSize(10)
-            self.description_label.setFont(desc_font)
+            self.description_label.setFont(QFont("Segoe UI", 10))
             
             content_layout.addWidget(self.description_label)
         
@@ -129,10 +366,7 @@ class SettingCard(QFrame):
             
             self.category_label = QLabel(self.setting_category)
             self.category_label.setObjectName("setting-category")
-            
-            cat_font = QFont()
-            cat_font.setPointSize(9)
-            self.category_label.setFont(cat_font)
+            self.category_label.setFont(QFont("Segoe UI", 9, QFont.Bold))
             
             category_layout.addWidget(self.category_label)
             content_layout.addWidget(category_container)
@@ -146,18 +380,20 @@ class SettingCard(QFrame):
         button_layout.setSpacing(8)
         
         # Details button
-        self.details_button = QPushButton("Details")
+        self.details_button = AnimatedButton("Details")
         self.details_button.setObjectName("setting-details")
         self.details_button.setProperty("class", "action-button")
         self.details_button.setCursor(Qt.PointingHandCursor)
         self.details_button.clicked.connect(self.on_details)
+        self.details_button.setMinimumHeight(36)
         
         # Action button
-        self.action_button = QPushButton("Apply")
+        self.action_button = AnimatedButton("Apply")
         self.action_button.setObjectName("setting-action")
-        self.action_button.setProperty("class", "action-button primary-action")
+        self.action_button.setProperty("class", "primary-action")
         self.action_button.setCursor(Qt.PointingHandCursor)
         self.action_button.clicked.connect(self.on_action)
+        self.action_button.setMinimumHeight(36)
         
         button_layout.addWidget(self.details_button)
         button_layout.addWidget(self.action_button)
@@ -173,6 +409,52 @@ class SettingCard(QFrame):
         """Handle action button click"""
         self.action_requested.emit(self.setting_id)
     
+    def enterEvent(self, event):
+        """Handle mouse enter event with animation
+        
+        Args:
+            event: Mouse event
+        """
+        # Start hover animation
+        self._hover_animation.stop()
+        self._hover_animation.setStartValue(self._hover_state)
+        self._hover_animation.setEndValue(1.0)
+        self._hover_animation.start()
+        
+        # Start elevation animation
+        self._elevation_animation.stop()
+        self._elevation_animation.setStartValue(self._y_offset)
+        self._elevation_animation.setEndValue(3.0)
+        self._elevation_animation.start()
+        
+        # Change cursor to pointing hand
+        self.setCursor(Qt.PointingHandCursor)
+        
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Handle mouse leave event with animation
+        
+        Args:
+            event: Mouse event
+        """
+        # Start hover animation
+        self._hover_animation.stop()
+        self._hover_animation.setStartValue(self._hover_state)
+        self._hover_animation.setEndValue(0.0)
+        self._hover_animation.start()
+        
+        # Start elevation animation
+        self._elevation_animation.stop()
+        self._elevation_animation.setStartValue(self._y_offset)
+        self._elevation_animation.setEndValue(0.0)
+        self._elevation_animation.start()
+        
+        # Reset cursor
+        self.setCursor(Qt.ArrowCursor)
+        
+        super().leaveEvent(event)
+    
     def mouseReleaseEvent(self, event):
         """Handle mouse release event
         
@@ -180,28 +462,10 @@ class SettingCard(QFrame):
             event: Mouse event
         """
         if event.button() == Qt.LeftButton:
+            # Apply press-and-release animation
+            self.setCursor(Qt.PointingHandCursor)
+            
+            # Emit clicked signal
             self.clicked.emit(self.setting_id)
         
         super().mouseReleaseEvent(event)
-    
-    def enterEvent(self, event):
-        """Handle mouse enter event
-        
-        Args:
-            event: Mouse event
-        """
-        # Change cursor to pointing hand
-        self.setCursor(Qt.PointingHandCursor)
-        
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event):
-        """Handle mouse leave event
-        
-        Args:
-            event: Mouse event
-        """
-        # Reset cursor
-        self.setCursor(Qt.ArrowCursor)
-        
-        super().leaveEvent(event)

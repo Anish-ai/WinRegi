@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QListWidget, QListWidgetItem, QFrame,
     QDialog, QLineEdit, QTextEdit, QComboBox, QFormLayout,
-    QMessageBox, QSplitter, QSizePolicy, QMenu, QAction
+    QMessageBox, QSplitter, QSizePolicy, QMenu, QAction, 
+    QInputDialog, QCheckBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QFont, QColor
@@ -32,7 +33,7 @@ class CommandDialog(QDialog):
         self.db_manager = self.command_manager.db_manager
         
         self.setWindowTitle("Add Command" if not command_id else "Edit Command")
-        self.resize(600, 400)
+        self.resize(600, 450)
         
         # Create form layout
         form_layout = QFormLayout(self)
@@ -51,6 +52,24 @@ class CommandDialog(QDialog):
         self.description_input.setMaximumHeight(80)
         form_layout.addRow("Description:", self.description_input)
         
+        # Category field
+        self.category_combo = QComboBox()
+        self.category_combo.setMinimumWidth(200)
+        self.populate_categories()
+        
+        # Create a layout for category with "Add New" button
+        category_layout = QHBoxLayout()
+        category_layout.setContentsMargins(0, 0, 0, 0)
+        category_layout.addWidget(self.category_combo)
+        
+        # Add new category button
+        add_category_button = QPushButton("Add New")
+        add_category_button.setFixedWidth(80)
+        add_category_button.clicked.connect(self.add_new_category)
+        category_layout.addWidget(add_category_button)
+        
+        form_layout.addRow("Category:", category_layout)
+        
         # Command type field
         self.type_combo = QComboBox()
         for cmd_type, cmd_type_name in self.command_manager.get_command_types().items():
@@ -61,6 +80,11 @@ class CommandDialog(QDialog):
         self.value_input = QTextEdit()
         self.value_input.setPlaceholderText("Enter command value")
         form_layout.addRow("Command:", self.value_input)
+        
+        # Tags field
+        self.tags_input = QLineEdit()
+        self.tags_input.setPlaceholderText("Enter comma-separated tags (e.g., cleanup,disk,system)")
+        form_layout.addRow("Tags:", self.tags_input)
         
         # Add help text based on selected command type
         self.help_label = QLabel()
@@ -93,12 +117,72 @@ class CommandDialog(QDialog):
         # Update help text for initial command type
         self.update_help_text()
     
+    def populate_categories(self):
+        """Populate the categories combo box"""
+        self.category_combo.clear()
+        
+        # Add empty option
+        self.category_combo.addItem("-- Select Category --", None)
+        
+        # Add categories from database
+        categories = self.db_manager.get_all_categories()
+        for category in categories:
+            self.category_combo.addItem(category["name"], category["id"])
+    
+    def add_new_category(self):
+        """Add a new category"""
+        category_name, ok = QInputDialog.getText(
+            self, "Add New Category", "Enter category name:"
+        )
+        
+        if ok and category_name:
+            # Check if category already exists
+            existing_category = self.db_manager.get_category_by_name(category_name)
+            if existing_category:
+                QMessageBox.warning(
+                    self, "Category Exists", 
+                    f"A category named '{category_name}' already exists."
+                )
+                return
+            
+            # Get description
+            category_desc, ok = QInputDialog.getText(
+                self, "Category Description", 
+                "Enter category description (optional):",
+                QLineEdit.Normal,
+                ""
+            )
+            
+            if not ok:
+                category_desc = ""
+            
+            # Add to database
+            new_id = self.db_manager.add_category(category_name, category_desc)
+            
+            if new_id > 0:
+                # Refresh categories and select the new one
+                self.populate_categories()
+                index = self.category_combo.findData(new_id)
+                if index >= 0:
+                    self.category_combo.setCurrentIndex(index)
+            else:
+                QMessageBox.warning(
+                    self, "Error", 
+                    f"Failed to add category '{category_name}'"
+                )
+    
     def load_command(self):
         """Load command data for editing"""
         command = self.db_manager.get_command_by_id(self.command_id)
         if command:
             self.name_input.setText(command["name"])
             self.description_input.setText(command["description"])
+            
+            # Set category
+            if command["category_id"]:
+                category_index = self.category_combo.findData(command["category_id"])
+                if category_index >= 0:
+                    self.category_combo.setCurrentIndex(category_index)
             
             # Set command type
             cmd_type = command["command_type"]
@@ -112,6 +196,10 @@ class CommandDialog(QDialog):
                 self.type_combo.setCurrentIndex(index)
             
             self.value_input.setText(command["command_value"])
+            
+            # Set tags
+            if command["tags"]:
+                self.tags_input.setText(command["tags"])
     
     def update_help_text(self):
         """Update help text based on selected command type"""
@@ -143,8 +231,10 @@ class CommandDialog(QDialog):
         # Get values from form
         name = self.name_input.text().strip()
         description = self.description_input.toPlainText().strip()
+        category_id = self.category_combo.currentData()
         cmd_type = self.type_combo.currentData()
         cmd_value = self.value_input.toPlainText().strip()
+        tags = self.tags_input.text().strip()
         
         # Validate input
         if not name:
@@ -166,7 +256,7 @@ class CommandDialog(QDialog):
             if self.command_id:
                 # Update existing command
                 success = self.db_manager.update_command(
-                    self.command_id, name, description, cmd_type, cmd_value
+                    self.command_id, name, description, cmd_type, cmd_value, category_id, tags
                 )
                 if success:
                     self.accept()
@@ -175,7 +265,7 @@ class CommandDialog(QDialog):
             else:
                 # Add new command
                 new_id = self.db_manager.add_command(
-                    name, description, cmd_type, cmd_value
+                    name, description, cmd_type, cmd_value, category_id, tags
                 )
                 if new_id:
                     self.command_id = new_id
@@ -219,6 +309,13 @@ class CommandItem(QWidget):
         # Spacer
         top_row.addStretch()
         
+        # Category badge (if available)
+        if command.get("category_name"):
+            category_badge = QLabel(command["category_name"])
+            category_badge.setObjectName("category-badge")
+            category_badge.setStyleSheet("background-color: #e0f7fa; color: #006064; padding: 3px 6px; border-radius: 10px;")
+            top_row.addWidget(category_badge)
+        
         # Command type badge
         cmd_type_map = {
             "system": "System",
@@ -247,6 +344,20 @@ class CommandItem(QWidget):
         value_label.setWordWrap(True)
         value_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(value_label)
+        
+        # Tags (if available)
+        if command.get("tags"):
+            tags_row = QHBoxLayout()
+            tags_label = QLabel("Tags:")
+            tags_label.setStyleSheet("color: #666;")
+            tags_row.addWidget(tags_label)
+            
+            tags_value = QLabel(command["tags"])
+            tags_value.setStyleSheet("color: #666;")
+            tags_row.addWidget(tags_value)
+            tags_row.addStretch()
+            
+            layout.addLayout(tags_row)
         
         # Set object name for styling
         self.setObjectName("command-list-item")
@@ -308,6 +419,48 @@ class CommandsPage(QWidget):
         description.setStyleSheet("color: #666666; margin-bottom: 10px;")
         layout.addWidget(description)
         
+        # Create filter section
+        filter_layout = QHBoxLayout()
+        filter_layout.setContentsMargins(0, 10, 0, 10)
+        
+        # Category filter
+        category_label = QLabel("Filter by Category:")
+        filter_layout.addWidget(category_label)
+        
+        self.category_filter = QComboBox()
+        self.category_filter.addItem("All Categories", None)
+        
+        # Populate categories
+        categories = self.db_manager.get_all_categories()
+        for category in categories:
+            self.category_filter.addItem(category["name"], category["id"])
+            
+        self.category_filter.currentIndexChanged.connect(self.filter_commands)
+        filter_layout.addWidget(self.category_filter)
+        
+        # Type filter
+        type_label = QLabel("Type:")
+        filter_layout.addWidget(type_label)
+        
+        self.type_filter = QComboBox()
+        self.type_filter.addItem("All Types", None)
+        for cmd_type, cmd_type_name in self.command_manager.get_command_types().items():
+            self.type_filter.addItem(cmd_type_name, cmd_type)
+            
+        self.type_filter.currentIndexChanged.connect(self.filter_commands)
+        filter_layout.addWidget(self.type_filter)
+        
+        # Search field
+        search_label = QLabel("Search:")
+        filter_layout.addWidget(search_label)
+        
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search commands...")
+        self.search_input.textChanged.connect(self.filter_commands)
+        filter_layout.addWidget(self.search_input)
+        
+        layout.addLayout(filter_layout)
+        
         # Create separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
@@ -352,6 +505,46 @@ class CommandsPage(QWidget):
             item.setSizeHint(command_widget.sizeHint())
             item.setData(Qt.UserRole, command["id"])
             self.commands_list.setItemWidget(item, command_widget)
+    
+    def filter_commands(self):
+        """Filter commands based on selected filters"""
+        # Get filter values
+        category_id = self.category_filter.currentData()
+        cmd_type = self.type_filter.currentData()
+        search_text = self.search_input.text().strip().lower()
+        
+        # Hide/show items based on filters
+        for i in range(self.commands_list.count()):
+            item = self.commands_list.item(i)
+            command_id = item.data(Qt.UserRole)
+            command = self.db_manager.get_command_by_id(command_id)
+            
+            if command:
+                # Category filter
+                pass_category = not category_id or command["category_id"] == category_id
+                
+                # Type filter
+                pass_type = not cmd_type or command["command_type"] == cmd_type
+                
+                # Search filter
+                pass_search = not search_text or \
+                    search_text in command["name"].lower() or \
+                    (command["description"] and search_text in command["description"].lower()) or \
+                    search_text in command["command_value"].lower() or \
+                    (command["tags"] and search_text in command["tags"].lower())
+                
+                # Show/hide item
+                item.setHidden(not (pass_category and pass_type and pass_search))
+        
+        # Show empty message if all items are hidden
+        visible_count = 0
+        for i in range(self.commands_list.count()):
+            if not self.commands_list.item(i).isHidden():
+                visible_count += 1
+        
+        self.empty_label.setVisible(visible_count == 0)
+        if visible_count == 0:
+            self.empty_label.setText("No commands found matching your filters.")
     
     def add_command(self):
         """Add a new command"""
