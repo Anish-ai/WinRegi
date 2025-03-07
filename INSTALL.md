@@ -7,14 +7,6 @@ WinRegi is an AI-powered Windows Registry Manager designed to simplify Windows s
 - Windows 10 or Windows 11
 - Administrator privileges (for registry modifications)
 
-## Installation - Easy Method (Recommended)
-
-1. Download the latest release from the [Releases](https://github.com/winregi/winregi/releases) page
-2. Run the installer 
-3. Follow the on-screen instructions
-
-The application will automatically request administrator privileges when needed.
-
 ## Installation from Source
 
 ### 1. Requirements
