@@ -1,58 +1,304 @@
-# WinRegi
+<p align="start">
+  <img src="https://i.ibb.co/v706hBb/Frame-1.png" alt="WinRegi Logo" width="600"/>
+</p>
 
-WinRegi is an AI-powered Windows Registry Manager built with PyQt5, providing an intuitive interface for accessing and modifying Windows Registry settings.
+# AI-Powered Windows Settings Explorer (WinRegi)
 
-## Project Structure
+## 🚀 Project Overview
 
-### Frontend (UI)
-- `src/ui/main_window.py` - Main application window with sidebar navigation
-- `src/ui/search_page.py` - Search interface for finding registry settings
-- `src/ui/settings_page.py` - Settings management interface
-- `src/ui/setting_detail.py` - Detailed view for individual settings
-- `src/ui/theme_manager.py` - Handles light/dark theme switching and styles
-- `src/ui/modern_ui_styles.css` - CSS styles for modern UI elements
+WinRegi is an **AI-powered Windows Registry and Settings Manager** built using **PyQt** and **Python**, designed to help users **explore and modify Windows settings effortlessly**. With an AI-integrated search feature, users can find settings based on natural language queries instead of exact keywords.
 
-### UI Widgets
-- `src/ui/widgets/action_button.py` - Custom action buttons with animations
-- `src/ui/widgets/category_list.py` - Category navigation component
-- `src/ui/widgets/search_bar.py` - Search input with suggestions
-- `src/ui/widgets/setting_card.py` - Card component for displaying settings
+### 🎯 Why This Project?
 
-### Backend
-- `src/windows_api/registry_manager.py` - Core functionality for registry operations
-- `src/windows_api/settings_manager.py` - Manages Windows settings interactions
-- `src/windows_api/powershell_manager.py` - PowerShell interface for advanced registry tasks
+Finding the right Windows settings can be frustrating due to:  
+✅ A vast number of system settings  
+✅ Different categories and locations of settings  
+✅ Need to remember exact technical terms
 
-### AI Engine
-- `src/ai_engine/nlp_processor.py` - Natural language processing for commands
-- `src/ai_engine/search_engine.py` - Intelligent search functionality
+**Solution:** A **smart, AI-powered search assistant** that allows users to type what they want in simple words and **instantly get relevant settings**!
 
-### Database
-- `src/database/db_manager.py` - Database operations and management
-- `src/database/schema.py` - Database schema definitions
+---
 
-### Entry Points
-- `main.py` - Main application entry point
-- `debug_main.py` - Debug version with enhanced logging
+## 🛠️ Tech Stack
 
-### Configuration
-- `WinRegi.spec` - PyInstaller specification file
-- `requirements.txt` - Python dependencies
-- `setup.py` - Installation script
+### 🔹 Backend
+- **Python** (Main logic, AI processing, Windows API interaction)
+- **PyQt** (GUI framework for desktop app development)
+- **Windows API & Registry Access** (For settings modification)
+- **Natural Language Processing (NLP)** (For AI-powered search)
+- **SQLite** (For storing thousands of pre-defined settings in a structured format)
 
-## Features
+### 🔹 Frontend (UI)
+- **PyQt Designer** (For visually designing UI)
+- **Custom Widgets** (For a modern look and feel)
+- **Modern glassmorphism UI** with light/dark themes
+- **Dedicated UI for Every Setting** (Ensuring easy navigation and interaction)
 
-- Modern glassmorphism UI with light/dark themes
-- Natural language search for registry settings
-- Category-based navigation of Windows settings
-- Real-time registry modification with safeguards
-- Collapsible sidebar navigation
-- Animated UI elements and transitions
+---
 
-## Installation
+## 🏗️ Architecture
 
-See `INSTALL.md` for detailed installation instructions.
+### Backend Components
 
-## License
+1. **Settings Database** 📂
+   - The app maintains a structured database of Windows settings
+   - Contains **thousands of pre-stored settings** with corresponding access methods (Registry edits, Control Panel links, PowerShell commands, etc.)
+   - Structured with categories, settings, and actions
 
-This project is licensed under the terms specified in the `LICENSE` file.
+2. **AI Search Engine** 🔍
+   - Users can type queries like:
+     - "How to make my PC faster?"
+     - "Enable dark mode"
+     - "Stop background apps"
+   - Natural language processing for search queries
+   - Keyword extraction and intent detection
+   - Relevance scoring and result ranking
+
+3. **Windows API Module**
+   - Registry management for reading/writing registry values
+   - PowerShell command execution
+   - Settings app and Control Panel integration
+
+### Frontend Components
+
+1. **Main Window**
+   - Tabbed interface for search and categorized settings
+   - Theme management (light/dark mode)
+   - Collapsible sidebar navigation
+
+2. **Search Page**
+   - Natural language search bar
+   - AI-powered search results
+   - Setting cards with quick actions
+
+3. **Settings Page**
+   - Categorized display of Windows settings
+   - Category list navigation
+   - Setting details view
+
+4. **Setting Detail Page**
+   - Detailed information about a specific setting
+   - Multiple action options (enable, disable, etc.)
+   - Technical details (registry paths, PowerShell commands)
+
+5. **UI Widgets**
+   - Reusable UI components like search bar, setting cards, action buttons
+   - Animated UI elements and transitions
+
+---
+
+## 📌 Features
+
+✅ **AI-Powered Search**: No need to remember exact names of settings. Just describe what you want.  
+✅ **Quick Actions**: Modify settings instantly from the app.  
+✅ **Deep Windows Integration**: Uses Windows API, Registry, and PowerShell for control.  
+✅ **Categorized Settings**: Organizes thousands of Windows settings into sections.  
+✅ **User-Friendly UI**: Built with PyQt for a smooth experience with light/dark themes.  
+✅ **Favorites & History**: Keep track of most-used settings.  
+✅ **Dedicated UI for Each Setting**: Visually rich interface for each setting.  
+✅ **AI Suggestions Instead of Direct Actions**: Ensures user has full control over modifications.  
+✅ **Expanded Settings Database**: Includes Group Policy settings and PowerShell automation scripts.
+✅ **AI Auto-Apply Mode** ⚡: Experienced users can enable this mode, where the AI applies recommended changes automatically with a confirmation prompt.
+✅ **Security Enhancements** 🔒: AI validation layer to prevent harmful or unintended modifications.
+
+---
+
+## 🖥️ Installation Guide
+
+### 📌 System Requirements
+- Windows 10 or Windows 11
+- Administrator privileges (for registry modifications)
+
+The application will automatically request administrator privileges when needed.
+
+### Installation from Source
+
+#### Prerequisites
+- Python 3.8 or higher
+- Git
+- pip
+- Virtual Environment (recommended)
+
+#### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/winregi.git
+cd winregi
+
+# Create a virtual environment
+python -m venv venv
+venv\Scripts\activate    # For Windows
+source venv/bin/activate  # For Linux/macOS
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python main.py
+```
+
+### For Developers
+
+To install in development mode:
+
+```bash
+# After cloning and creating a virtual environment
+pip install -e .
+
+# Run tests
+pytest tests
+```
+
+### Building an Executable (Optional)
+
+```bash
+python build_exe.py
+```
+
+This will create a `dist/WinRegi` directory containing the executable and all necessary files.
+
+---
+
+## 🚀 Usage
+
+1. Launch the application
+2. Use the search bar to **type your query** in natural language
+3. Click on suggested settings to **review and customize them**
+4. Browse through categorized settings for easy access
+5. Apply changes with the option to create restore points for safety
+
+---
+
+## 🔧 Example Queries & Responses
+
+| **User Query** | **Suggested Settings & Actions** |
+|--------------|----------------|
+| "Turn on night mode" | ✅ Open Night Light settings UI with options to customize |
+| "Make text bigger" | ✅ Show accessibility settings with slider control |
+| "Disable background apps" | ✅ List background apps, let user toggle which to disable |
+| "Improve battery life" | ✅ Suggest power settings adjustments, allow user to apply changes |
+| "Speed up PC" | ✅ Recommend startup app removal, service tweaks, and performance settings |
+
+---
+
+## 📚 Where We Get Windows Settings & Methods
+
+We gather Windows settings from multiple sources:
+- **Windows Registry Keys** 🗝️
+- **Group Policy Settings (gpedit.msc)** 📜
+- **Control Panel & PowerShell Commands** ⚡
+- **Windows Settings URLs (ms-settings://)** 🏗️
+- **Public Microsoft Documentation** 📄
+- **Pre-Stored Structured Database** 📊 (Containing thousands of Windows settings)
+
+---
+
+## 📂 Project Structure
+
+```
+winregi/
+├── main.py                   # Main application entry point
+├── debug_main.py             # Debug version with enhanced logging
+├── src/
+│   ├── ui/                   # User interface components
+│   │   ├── main_window.py    # Main application window with sidebar
+│   │   ├── search_page.py    # Search interface
+│   │   ├── settings_page.py  # Settings management interface
+│   │   ├── setting_detail.py # Detailed view for individual settings
+│   │   ├── theme_manager.py  # Handles light/dark theme switching and styles
+│   │   ├── modern_ui_styles.css  # CSS styles for modern UI elements
+│   │   └── widgets/          # Reusable UI components
+│   │       ├── action_button.py  # Custom action buttons with animations
+│   │       ├── category_list.py  # Category navigation component
+│   │       ├── search_bar.py     # Search input with suggestions
+│   │       └── setting_card.py   # Card component for displaying settings
+│   ├── windows_api/          # Windows API integration
+│   │   ├── registry_manager.py    # Core functionality for registry operations
+│   │   ├── settings_manager.py    # Manages Windows settings interactions
+│   │   └── powershell_manager.py  # PowerShell interface for advanced registry tasks
+│   ├── ai_engine/            # AI components
+│   │   ├── nlp_processor.py  # Natural language processing for commands
+│   │   └── search_engine.py  # Intelligent search functionality
+│   └── database/             # Database components
+│       ├── db_manager.py     # Database operations and management
+│       └── schema.py         # Database schema definitions
+├── WinRegi.spec              # PyInstaller specification file
+├── requirements.txt          # Python dependencies
+└── setup.py                  # Installation script
+```
+
+---
+
+## 💡 Future Improvements
+
+🔹 **Voice-Based Search** 🎙️ (Find settings with voice commands)  
+🔹 **Enhanced AI Search** (More sophisticated NLP models, learning from user interactions)  
+🔹 **User Preferences** (Customize settings based on usage patterns)  
+🔹 **Integration with Windows Assistant** 🤖  
+🔹 **Smart Recommendations** (Suggest optimizations based on usage)  
+🔹 **Windows Troubleshooting Wizards**  
+🔹 **System Optimization Presets**  
+🔹 **Backup and Restore Functionality**
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions to improve this project! Here's how you can help:
+
+1. **Fork the Repository** 🍴
+2. **Create a Feature Branch** (`git checkout -b feature-name`)
+3. **Commit Your Changes** (`git commit -m "Added new feature"`)
+4. **Push to Your Branch** (`git push origin feature-name`)
+5. **Submit a Pull Request** 🚀
+
+### Areas Where We Need Help
+- Expanding the settings database
+- Improving the AI search capabilities
+- Adding new features
+- Fixing bugs
+- Improving documentation
+- Writing tests
+
+---
+
+## ❓ Troubleshooting
+
+### Missing Dependencies
+If you encounter errors related to missing dependencies:
+```bash
+pip install --upgrade -r requirements.txt
+```
+
+### Permission Issues
+WinRegi requires administrator privileges to modify Windows Registry settings. If you encounter permission issues:
+1. Close the application
+2. Right-click on the WinRegi shortcut or executable
+3. Select "Run as administrator"
+
+### PyQt Installation Issues
+If you encounter issues installing PyQt5:
+```bash
+pip install --upgrade pip
+pip install PyQt5
+```
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License**. Feel free to use and modify it! 🎉
+
+---
+
+## 📧 Contact
+
+👤 **Developer**: Anish Kumar  
+📩 Email: aniskum59431@gmail.com  
+🔗 GitHub: [Anish-ai](https://github.com/Anish-ai)  
+🔗 LinkedIn: [Anish Kumar](https://www.linkedin.com/in/anish-kumar-71779326a/)  
+
+---
+
+_🚀 Made with ❤️ to make Windows settings easier for everyone!_
