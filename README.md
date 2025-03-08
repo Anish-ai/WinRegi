@@ -27,6 +27,7 @@ Finding the right Windows settings can be frustrating due to:
 - **Windows API & Registry Access** (For settings modification)
 - **Natural Language Processing (NLP)** (For AI-powered search)
 - **SQLite** (For storing thousands of pre-defined settings in a structured format)
+- **Watchdog** (For hot reloading in development mode)
 
 ### 🔹 Frontend (UI)
 - **PyQt Designer** (For visually designing UI)
@@ -58,6 +59,11 @@ Finding the right Windows settings can be frustrating due to:
    - Registry management for reading/writing registry values
    - PowerShell command execution
    - Settings app and Control Panel integration
+
+4. **Hot Reloading Module** 🔄
+   - Monitors file changes during development using `watchdog`
+   - Automatically reloads the UI when code changes are detected
+   - Supports seamless development workflow
 
 ### Frontend Components
 
@@ -97,9 +103,12 @@ Finding the right Windows settings can be frustrating due to:
 ✅ **Favorites & History**: Keep track of most-used settings.  
 ✅ **Dedicated UI for Each Setting**: Visually rich interface for each setting.  
 ✅ **AI Suggestions Instead of Direct Actions**: Ensures user has full control over modifications.  
-✅ **Expanded Settings Database**: Includes Group Policy settings and PowerShell automation scripts.
-✅ **AI Auto-Apply Mode** ⚡: Experienced users can enable this mode, where the AI applies recommended changes automatically with a confirmation prompt.
-✅ **Security Enhancements** 🔒: AI validation layer to prevent harmful or unintended modifications.
+✅ **Expanded Settings Database**: Includes Group Policy settings and PowerShell automation scripts.  
+✅ **AI Auto-Apply Mode** ⚡: Experienced users can enable this mode, where the AI applies recommended changes automatically with a confirmation prompt.  
+✅ **Security Enhancements** 🔒: AI validation layer to prevent harmful or unintended modifications.  
+✅ **Hot Reloading** 🔄: Automatically reloads the UI during development when code changes are detected.  
+✅ **Development Mode**: Run the app with `--dev` flag for hot reloading and enhanced debugging.  
+✅ **Admin Privilege Control**: Use `--no-admin` flag to skip admin elevation prompts.  
 
 ---
 
@@ -146,8 +155,11 @@ To install in development mode:
 # After cloning and creating a virtual environment
 pip install -e .
 
-# Run tests
-pytest tests
+# Install watchdog for hot reloading
+pip install watchdog
+
+# Run the app in development mode
+python main.py --dev
 ```
 
 ### Building an Executable (Optional)
@@ -162,11 +174,59 @@ This will create a `dist/WinRegi` directory containing the executable and all ne
 
 ## 🚀 Usage
 
-1. Launch the application
-2. Use the search bar to **type your query** in natural language
-3. Click on suggested settings to **review and customize them**
-4. Browse through categorized settings for easy access
-5. Apply changes with the option to create restore points for safety
+### Running the Application
+
+1. **Normal Mode**:
+   - Launch the application with default settings:
+     ```bash
+     python main.py
+     ```
+   - The app will automatically request administrator privileges if needed.
+
+2. **Development Mode**:
+   - Run the app in development mode with hot reloading:
+     ```bash
+     python main.py --dev
+     ```
+   - This mode enables:
+     - **Hot Reloading**: Automatically reloads the UI when code changes are detected.
+     - **Enhanced Logging**: Provides detailed logs for debugging.
+
+3. **Skip Admin Elevation**:
+   - Run the app without requesting admin privileges (limited functionality):
+     ```bash
+     python main.py --no-admin
+     ```
+
+### Using the Application
+
+1. **Search for Settings**:
+   - Use the search bar to type your query in natural language (e.g., "How to enable dark mode?").
+   - The AI-powered search engine will suggest relevant settings.
+
+2. **Browse Categorized Settings**:
+   - Navigate through categorized settings for easy access.
+   - Categories include:
+     - **System**
+     - **Privacy**
+     - **Performance**
+     - **Customization**
+
+3. **Modify Settings**:
+   - Click on a setting to view detailed information and available actions.
+   - Apply changes directly from the app (e.g., enable/disable features, adjust preferences).
+
+4. **Favorites & History**:
+   - Save frequently used settings to **Favorites** for quick access.
+   - View **History** to revisit recently accessed settings.
+
+5. **AI Auto-Apply Mode**:
+   - Enable **Auto-Apply Mode** in settings to let the AI apply recommended changes automatically (with confirmation prompts).
+
+6. **Development Mode Features**:
+   - In development mode (`--dev` flag):
+     - Make changes to the code, and the UI will automatically reload.
+     - Use the enhanced logging for debugging.
 
 ---
 
@@ -277,6 +337,11 @@ WinRegi requires administrator privileges to modify Windows Registry settings. I
 2. Right-click on the WinRegi shortcut or executable
 3. Select "Run as administrator"
 
+Alternatively, use the --no-admin flag to run without admin privileges (limited functionality):
+```bash
+python main.py --no-admin
+```
+
 ### PyQt Installation Issues
 If you encounter issues installing PyQt5:
 ```bash
@@ -284,6 +349,17 @@ pip install --upgrade pip
 pip install PyQt5
 ```
 
+### Hot Reloading Not Working
+If hot reloading is not working in development mode:
+1. Ensure ```watchdog``` is installed:
+```bash
+pip install watchdog
+```
+
+2. Run the application with the ```--dev``` flag:
+```bash
+python main.py --dev
+```
 ---
 
 ## 📜 License
