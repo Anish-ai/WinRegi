@@ -39,6 +39,14 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+- To run in development mode with hot reloading:
+```bash
+python main.py --dev
+```
+- To skip admin elevation prompt:
+```bash
+python main.py --no-admin
+```
 
 ### 6. Building an Executable (Optional)
 
@@ -87,6 +95,7 @@ pytest tests
 - **AI-Powered Search**: Find Windows settings using natural language
 - **Registry Management**: View and modify Windows Registry settings safely
 - **Administrator Mode**: Automatically runs with admin privileges for full functionality
+- **Hot Reloading**: Automatically reloads the UI when code changes are detected (development mode only)
 
 ## Troubleshooting
 
@@ -106,6 +115,11 @@ WinRegi requires administrator privileges to modify Windows Registry settings. I
 2. Right-click on the WinRegi shortcut or executable
 3. Select "Run as administrator"
 
+Alternatively, use the --no-admin flag to run without admin privileges (limited functionality):
+```bash
+python main.py --no-admin
+```
+
 ### PyQt Installation Issues
 
 If you encounter issues installing PyQt5:
@@ -113,6 +127,19 @@ If you encounter issues installing PyQt5:
 ```bash
 pip install --upgrade pip
 pip install PyQt5
+```
+
+### Hot Reloading Not Working
+
+If hot reloading is not working in development mode:
+
+1. Ensure ```watchdog``` is installed:
+```bash
+pip install watchdog
+```
+2. Run the application with the ```--dev``` flag:
+```bash
+python main.py --dev
 ```
 
 ## Uninstallation
