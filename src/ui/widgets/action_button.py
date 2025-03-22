@@ -33,14 +33,19 @@ class ActionButton(QPushButton):
         
         # Set button properties
         self.setObjectName("action-button")
+        self.setMinimumHeight(36)  # Ensure consistent height
+        self.setCursor(Qt.PointingHandCursor)  # Add pointer cursor
         
         # Add class based on action type
         if self.action_type == "primary":
             self.setProperty("class", "action-button primary-action")
+            self.setStyleSheet("background-color: #2979ff; color: white; border-radius: 4px; font-weight: bold;")
         elif self.action_type == "warning":
             self.setProperty("class", "action-button warning-action")
+            self.setStyleSheet("background-color: #f44336; color: white; border-radius: 4px; font-weight: bold;")
         else:
             self.setProperty("class", "action-button")
+            self.setStyleSheet("background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;")
         
         # Set tooltip
         if self.action_description:
@@ -90,6 +95,8 @@ class DetailedActionButton(QWidget):
             self.description_label.setStyleSheet("color: #777; font-size: 11px;")
             self.description_label.setWordWrap(True)
             self.description_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+            # Limit description height to prevent overly tall buttons
+            self.description_label.setMaximumHeight(40)
             layout.addWidget(self.description_label)
     
     def setEnabled(self, enabled):

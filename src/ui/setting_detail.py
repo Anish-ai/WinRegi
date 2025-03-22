@@ -4,7 +4,7 @@ Setting detail page for WinRegi application
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QScrollArea, QFrame, QGridLayout,
-    QGroupBox, QSizePolicy
+    QGroupBox, QSizePolicy, QMessageBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -46,6 +46,13 @@ class SettingDetailPage(QWidget):
         
         # Create header section
         header_layout = QVBoxLayout()
+        
+        # Add back button
+        back_button = QPushButton("← Back")
+        back_button.setObjectName("back-button")
+        back_button.setFixedWidth(100)
+        back_button.clicked.connect(self.on_back_clicked)
+        header_layout.addWidget(back_button)
         
         # Setting name
         self.name_label = QLabel()
@@ -246,7 +253,52 @@ class SettingDetailPage(QWidget):
         Args:
             action: Action dictionary
         """
-        # Apply the action
-        result = self.settings_manager.apply_setting_action(action)
+        # Log the action being executed
+        print(f"Action: {action['name']}, Command: {action['powershell_command']}")
         
-        # TODO: Show result in a notification or dialog
+        # Special handling for Night Light
+        if "night light" in action['name'].lower():
+            result = self.settings_manager.toggle_night_light("enable" in action['name'].lower())
+        else:
+            # Apply the action
+            result = self.settings_manager.apply_setting_action(action)
+        
+        # Show result in a notification or dialog
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Action Result")
+        
+        if result.get('success', False):
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setText(f"Action '{action['name']}' completed successfully.")
+            
+            if result.get('requires_manual_action', False):
+                msg_box.setInformativeText("Please complete the action in the opened settings window.")
+            
+            if result.get('message'):
+                msg_box.setDetailedText(result['message'])
+        else:
+            msg_box.setIcon(QMessageBox.Warning)
+            msg_box.setText(f"Action '{action['name']}' failed.")
+            
+            if result.get('requires_admin', False):
+                msg_box.setInformativeText("This action requires administrator privileges.")
+            
+            if result.get('message'):
+                msg_box.setDetailedText(result['message'])
+        
+        msg_box.exec_()
+    
+    def on_back_clicked(self):
+        """Handle back button click"""
+        # Get parent window
+        main_window = self.window()
+        
+        # Go back to previous page
+        if hasattr(main_window, 'content_area'):
+            # Find the index of the page that was active before
+            # Default to search page (index 0)
+            main_window.content_area.set_current_index(0)
+            
+            # Update navigation button state
+            if hasattr(main_window, 'sidebar'):
+                main_window.sidebar.handle_nav_click(0)

@@ -209,12 +209,19 @@ class DatabaseManager:
                 self.connect()
                 
             self.cursor.execute("""
-                SELECT id, setting_id, name, description, action_type, action_value, is_default
+                SELECT id, setting_id, name, description, powershell_command, is_default
                 FROM setting_actions
                 WHERE setting_id = ?
             """, (setting_id,))
             
-            return [dict(row) for row in self.cursor.fetchall()]
+            actions = [dict(row) for row in self.cursor.fetchall()]
+            
+            # Debug output
+            print(f"Found {len(actions)} actions for setting {setting_id}")
+            for action in actions:
+                print(f"Action: {action['name']}, Command: {action['powershell_command']}")
+            
+            return actions
         except Exception as e:
             print(f"Error getting actions for setting: {e}")
             return []
@@ -354,7 +361,7 @@ class DatabaseManager:
             return []
     
     def get_command_by_id(self, command_id: int) -> Optional[Dict[str, Any]]:
-        """Get a specific command by ID
+        """Get detailed information about a specific command
         
         Args:
             command_id: ID of the command to retrieve
@@ -367,15 +374,24 @@ class DatabaseManager:
                 self.connect()
                 
             self.cursor.execute("""
-                SELECT c.id, c.name, c.description, c.command_type, c.command_value, 
-                       c.category_id, cat.name as category_name, c.tags, c.created_at, c.last_used
+                SELECT c.*, cat.name as category_name
                 FROM custom_commands c
                 LEFT JOIN categories cat ON c.category_id = cat.id
                 WHERE c.id = ?
             """, (command_id,))
             
             row = self.cursor.fetchone()
-            return dict(row) if row else None
+            if row:
+                # Update last_used timestamp
+                self.cursor.execute("""
+                    UPDATE custom_commands
+                    SET last_used = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (command_id,))
+                self.conn.commit()
+                
+                return dict(row)
+            return None
         except Exception as e:
             print(f"Error getting command by ID: {e}")
             return None
@@ -618,3 +634,43 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error getting commands in search results: {e}")
             return []
+    
+    def add_search_history(self, query: str) -> bool:
+        """Add a search query to the search history
+        
+        Args:
+            query: Search query to add
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if not self.conn:
+                self.connect()
+                
+            # Check if search_history table exists
+            try:
+                self.cursor.execute("SELECT COUNT(*) FROM search_history")
+            except sqlite3.OperationalError:
+                # Create table if it doesn't exist
+                self.cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS search_history (
+                        id INTEGER PRIMARY KEY,
+                        query TEXT NOT NULL,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+            
+            # Add query to search history
+            self.cursor.execute("""
+                INSERT INTO search_history (query)
+                VALUES (?)
+            """, (query,))
+            
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding search history: {e}")
+            if self.conn:
+                self.conn.rollback()
+            return False

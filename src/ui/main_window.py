@@ -4,7 +4,7 @@ Main window for WinRegi application with modern UI design
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QTabWidget, QLabel, QPushButton, QSplitter, QSizePolicy,
-    QStackedWidget, QToolButton, QFrame, QScrollArea, QGraphicsDropShadowEffect
+    QStackedWidget, QToolButton, QFrame, QScrollArea, QGraphicsDropShadowEffect, QDialog, QDialogButtonBox
 )
 from PyQt5.QtCore import (
     Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QSequentialAnimationGroup,
@@ -40,7 +40,7 @@ class NavigationButton(QToolButton):
         self.setCheckable(True)
         self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.setMinimumHeight(50)
+        self.setMinimumHeight(40)  # Reduced from 50 to 40
         
         # Set icon text
         self.icon_text = icon_text
@@ -87,8 +87,8 @@ class SidebarNavigation(QWidget):
         super().__init__(parent)
         
         # Set fixed width for expanded state
-        self.expanded_width = 220
-        self.collapsed_width = 60
+        self.expanded_width = 180
+        self.collapsed_width = 50
         self.is_expanded = True
         
         # Set object name for styling
@@ -103,6 +103,9 @@ class SidebarNavigation(QWidget):
         self.shadow.setColor(QColor(0, 0, 0, 40))
         self.shadow.setOffset(2, 0)
         self.setGraphicsEffect(self.shadow)
+        
+        # Set initial width
+        self.setFixedWidth(self.expanded_width)
     
     def init_ui(self):
         """Initialize user interface"""
@@ -156,6 +159,7 @@ class SidebarNavigation(QWidget):
         self.settings_button = QPushButton("Settings")
         self.settings_button.setObjectName("settings-button")
         self.settings_button.setFixedHeight(40)
+        self.settings_button.clicked.connect(self.on_settings_clicked)  # Connect to handler
         layout.addWidget(self.settings_button)
     
     def handle_nav_click(self, index):
@@ -195,6 +199,48 @@ class SidebarNavigation(QWidget):
         
         # Update expanded state
         self.is_expanded = not self.is_expanded
+
+    def on_settings_clicked(self):
+        """Handle settings button click"""
+        # Create a simple settings dialog
+        dialog = QDialog(self.parent())
+        dialog.setWindowTitle("Settings")
+        dialog.setMinimumWidth(400)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Add settings content
+        title = QLabel("Application Settings")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
+        layout.addWidget(title)
+        
+        # Add theme toggle
+        theme_container = QWidget()
+        theme_layout = QHBoxLayout(theme_container)
+        theme_layout.setContentsMargins(0, 0, 0, 0)
+        
+        theme_label = QLabel("Application Theme:")
+        theme_layout.addWidget(theme_label)
+        
+        theme_toggle = ThemeToggleSwitch()
+        theme_toggle.setChecked(self.parent().theme_manager.current_theme == "dark")
+        theme_toggle.toggled.connect(self.parent().toggle_theme)
+        theme_layout.addWidget(theme_toggle)
+        
+        layout.addWidget(theme_container)
+        
+        # Add version info
+        version_label = QLabel("WinRegi v1.0.0")
+        version_label.setStyleSheet("color: #777; margin-top: 20px;")
+        layout.addWidget(version_label)
+        
+        # Add buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok)
+        button_box.accepted.connect(dialog.accept)
+        layout.addWidget(button_box)
+        
+        # Show dialog
+        dialog.exec_()
 
 class ContentArea(QStackedWidget):
     """Content area with animated page transitions"""
@@ -408,11 +454,11 @@ class MainWindow(QMainWindow):
         # Create header container
         header = QWidget()
         header.setObjectName("app-header")
-        header.setFixedHeight(70)
+        header.setFixedHeight(60)  # Reduced from 70 to 60
         
         # Use horizontal layout for header
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(20, 10, 20, 10)
+        header_layout.setContentsMargins(15, 5, 15, 5)  # Reduced margins
         
         # App logo and title
         logo_title_container = QWidget()
@@ -423,8 +469,8 @@ class MainWindow(QMainWindow):
         logo_label = QLabel("🔧")
         logo_label.setObjectName("app-logo")
         logo_label.setAlignment(Qt.AlignCenter)
-        logo_label.setFixedSize(40, 40)
-        logo_label.setStyleSheet("font-size: 24px;")
+        logo_label.setFixedSize(32, 32)  # Reduced from 40x40
+        logo_label.setStyleSheet("font-size: 20px;")  # Reduced font size
         
         # Create title container
         title_container = QWidget()
@@ -435,10 +481,12 @@ class MainWindow(QMainWindow):
         # Title with custom font
         title_label = QLabel("WinRegi")
         title_label.setObjectName("app-title")
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold;")  # Adjusted font size
         
         # Subtitle
         subtitle_label = QLabel("AI-Powered Windows Settings")
         subtitle_label.setObjectName("app-subtitle")
+        subtitle_label.setStyleSheet("font-size: 11px; color: #666;")  # Adjusted font size
         
         # Add to title layout
         title_layout.addWidget(title_label)
@@ -454,8 +502,9 @@ class MainWindow(QMainWindow):
         # Add search bar in header
         search_container = QWidget()
         search_container.setObjectName("header-search-container")
-        search_container.setMinimumWidth(400)
-        search_container.setFixedHeight(40)
+        search_container.setMinimumWidth(300)  # Reduced from 400
+        search_container.setFixedHeight(36)  # Reduced from 40
+        search_container.setStyleSheet("background-color: rgba(240, 240, 240, 0.8); border-radius: 18px;")
         
         # Create search layout
         search_layout = QHBoxLayout(search_container)
@@ -472,6 +521,7 @@ class MainWindow(QMainWindow):
         self.header_search = QPushButton("Search settings and commands...")
         self.header_search.setObjectName("header-search-button")
         self.header_search.setCursor(Qt.PointingHandCursor)
+        self.header_search.setStyleSheet("text-align: left; border: none; background: transparent; color: #666;")
         self.header_search.clicked.connect(self.focus_search)
         
         # Add to search layout
@@ -487,18 +537,25 @@ class MainWindow(QMainWindow):
         # Admin status indicator
         admin_indicator = QWidget()
         admin_indicator.setObjectName("admin-indicator")
-        admin_indicator.setFixedSize(120, 30)
+        admin_indicator.setFixedSize(100, 26)  # Reduced size
         admin_indicator.setProperty("admin-status", "admin" if self.is_admin else "limited")
         
+        # Set style based on admin status
+        if self.is_admin:
+            admin_indicator.setStyleSheet("background-color: rgba(76, 175, 80, 0.2); border-radius: 13px;")
+        else:
+            admin_indicator.setStyleSheet("background-color: rgba(255, 152, 0, 0.2); border-radius: 13px;")
+        
         admin_layout = QHBoxLayout(admin_indicator)
-        admin_layout.setContentsMargins(10, 5, 10, 5)
+        admin_layout.setContentsMargins(8, 3, 8, 3)  # Reduced margins
         
         # Icon for admin status
         admin_icon = QLabel("🔒")
-        admin_icon.setFixedSize(20, 20)
+        admin_icon.setFixedSize(16, 16)  # Reduced size
         
         # Admin status text
         admin_text = QLabel("Admin" if self.is_admin else "Limited")
+        admin_text.setStyleSheet("font-size: 11px;")  # Reduced font size
         
         admin_layout.addWidget(admin_icon)
         admin_layout.addWidget(admin_text)

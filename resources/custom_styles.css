@@ -1,0 +1,70 @@
+/* Custom styles for WinRegi application */
+
+/* Navigation buttons */
+#nav-button {
+    border-radius: 6px;
+    margin: 2px 0;
+    font-size: 13px;
+}
+
+/* Category list items */
+.category-item {
+    border-radius: 6px;
+    margin: 2px 0;
+}
+
+/* Setting cards */
+.setting-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.setting-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Back button in detail page */
+#back-button {
+    background-color: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: normal;
+    box-shadow: none;
+    margin-bottom: 10px;
+}
+
+#back-button:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+
+/* Search container */
+#search-container {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#search-container:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Action buttons */
+.action-button {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+}
+
+/* Settings dialog */
+#settings-dialog {
+    min-width: 400px;
+    padding: 20px;
+}
+
+/* Theme toggle container */
+#theme-toggle-container {
+    border-radius: 15px;
+    padding: 5px 10px;
+} 

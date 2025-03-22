@@ -35,12 +35,13 @@ class CategoryItem(QFrame):
         # Set frame properties
         self.setFrameShape(QFrame.NoFrame)
         self.setProperty("class", "category-item")
+        self.setFixedHeight(50)  # Add fixed height to ensure consistent sizing
     
     def init_ui(self):
         """Initialize user interface"""
         # Create layout
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(5, 5, 5, 5)  # Reduce margins to save space
         
         # Add icon if available
         if self.category_icon:
@@ -71,19 +72,19 @@ class CategoryItem(QFrame):
         
         # Create text area
         text_layout = QVBoxLayout()
-        text_layout.setSpacing(2)
+        text_layout.setSpacing(0)  # Reduce spacing to fit content better
         
         # Category name
         name_label = QLabel(self.category_name)
         name_label.setObjectName("category-name")
-        name_label.setStyleSheet("font-weight: bold;")
+        name_label.setStyleSheet("font-weight: bold; font-size: 12px;")  # Reduce font size
         text_layout.addWidget(name_label)
         
-        # Category description
-        if self.category_description:
-            description_label = QLabel(self.category_description)
+        # Category description - only show if there's enough space
+        if self.category_description and len(self.category_description) < 40:  # Limit description length
+            description_label = QLabel(self.category_description[:37] + "..." if len(self.category_description) > 37 else self.category_description)
             description_label.setObjectName("category-description")
-            description_label.setStyleSheet("color: #777; font-size: 11px;")
+            description_label.setStyleSheet("color: #777; font-size: 10px;")  # Smaller font size
             text_layout.addWidget(description_label)
         
         # Add text layout to main layout
@@ -112,6 +113,8 @@ class CategoryList(QListWidget):
         self.setFrameShape(QFrame.NoFrame)
         self.setAlternatingRowColors(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollMode(QListWidget.ScrollPerPixel)  # Smoother scrolling
+        self.setSpacing(2)  # Add spacing between items
         
         # Connect signals
         self.itemClicked.connect(self.on_item_clicked)

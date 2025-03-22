@@ -24,71 +24,32 @@ class SearchEngine:
         """Search for settings and commands matching the query
         
         Args:
-            query: Search query string
+            query: Search query
             
         Returns:
-            List of matching settings and commands
+            List of search results
         """
-        try:
-            # Process the query with NLP
-            processed_query = self.nlp.process_query(query)
-            
-            # Log the search query (non-critical, so wrap in try-except)
-            try:
-                self.db_manager.log_search_query(query)
-            except Exception as e:
-                print(f"Error logging search query: {e}")
-                # Continue with search even if logging fails
-            
-            # Get matching settings from database
-            setting_results = self.db_manager.search_settings(query)
-            
-            # Get matching commands from database
-            command_results = self.db_manager.get_commands_in_search_results(query)
-            
-            # If no results, return empty list early
-            if not setting_results and not command_results:
-                return []
-            
-            # Process settings results    
-            if setting_results:
-                # Enhance settings results with relevance scoring
-                scored_settings = self._score_results(setting_results, processed_query)
-                
-                # Sort by relevance score
-                sorted_settings = sorted(scored_settings, key=lambda x: x['relevance_score'], reverse=True)
-                
-                # Filter out low-relevance results
-                if sorted_settings and sorted_settings[0]['relevance_score'] > 0.5:
-                    threshold = max(0.3, sorted_settings[0]['relevance_score'] * 0.5)
-                    filtered_settings = [r for r in sorted_settings if r['relevance_score'] >= threshold]
-                else:
-                    filtered_settings = sorted_settings
-                    
-                # Mark results as settings
-                for result in filtered_settings:
-                    result['result_type'] = 'setting'
-            else:
-                filtered_settings = []
-            
-            # Combine results
-            combined_results = filtered_settings + command_results
-            
-            # Sort combined results by relevance (commands have no score, so they go at the end)
-            # Use result_type as secondary sort to group settings and commands
-            def sort_key(item):
-                if 'relevance_score' in item:
-                    return (item['relevance_score'], item.get('result_type', 'setting'))
-                return (0, item.get('result_type', 'command'))
-                
-            combined_results = sorted(combined_results, key=sort_key, reverse=True)
-            
-            return combined_results
-        except Exception as e:
-            print(f"Error in search engine: {e}")
-            traceback.print_exc()
-            # Return empty results on error rather than crashing
-            return []
+        # Record search in history
+        self.db_manager.add_search_history(query)
+        
+        # Get settings matching the query
+        settings_results = self.db_manager.search_settings(query)
+        
+        # Add result type to settings
+        for result in settings_results:
+            result['result_type'] = 'setting'
+        
+        # Get commands matching the query
+        command_results = self.db_manager.get_commands_in_search_results(query)
+        
+        # Combine results
+        all_results = settings_results + command_results
+        
+        # Sort results by relevance (simple implementation)
+        # In a real AI-powered search, this would use more sophisticated ranking
+        all_results.sort(key=lambda x: self._calculate_relevance(x, query), reverse=True)
+        
+        return all_results
     
     def _score_results(self, results: List[Dict[str, Any]], processed_query: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Score search results based on relevance to the query
@@ -119,19 +80,20 @@ class SearchEngine:
             # Return the original results with a default score as fallback
             return [dict(r, relevance_score=0.5) for r in results]
     
-    def _calculate_relevance(self, result: Dict[str, Any], processed_query: Dict[str, Any]) -> float:
+    def _calculate_relevance(self, result: Dict[str, Any], query: str) -> float:
         """Calculate relevance score for a result
         
         Args:
             result: Search result
-            processed_query: Processed query information
+            query: Search query string
             
         Returns:
             Relevance score between 0 and 1
         """
         try:
             score = 0.0
-            keywords = processed_query['keywords']
+            query_lower = query.lower()
+            keywords = query_lower.split()
             
             # Check name match
             name_lower = result['name'].lower()
@@ -156,29 +118,6 @@ class SearchEngine:
                     if keyword in category_lower:
                         score += 0.2
                         break
-            
-            # Intent-based scoring
-            intent = processed_query['intent']
-            
-            # For enable/disable intents, check if the setting has matching actions
-            if intent['is_enable'] or intent['is_disable']:
-                try:
-                    setting_id = result['id']
-                    actions = self.db_manager.get_actions_for_setting(setting_id)
-                    
-                    action_types = [action['name'].lower() for action in actions]
-                    enable_keywords = ["enable", "on", "activate"]
-                    disable_keywords = ["disable", "off", "deactivate"]
-                    
-                    has_enable_action = any(any(k in action for k in enable_keywords) for action in action_types)
-                    has_disable_action = any(any(k in action for k in disable_keywords) for action in action_types)
-                    
-                    # If the intent matches available actions, increase score
-                    if (intent['is_enable'] and has_enable_action) or (intent['is_disable'] and has_disable_action):
-                        score += 0.2
-                except Exception as e:
-                    print(f"Error in intent-based scoring: {e}")
-                    # Continue even if this part fails
             
             # Normalize score to be between 0 and 1
             return min(score, 1.0)

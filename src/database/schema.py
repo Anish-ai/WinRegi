@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS settings (
     description TEXT,
     category_id INTEGER,
     access_method_id INTEGER,
-    registry_path TEXT,
-    powershell_command TEXT,
+    powershell_command TEXT NOT NULL,
+    powershell_get_command TEXT,
     control_panel_path TEXT,
     ms_settings_path TEXT,
     group_policy_path TEXT,
@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS setting_actions (
     setting_id INTEGER,
     name TEXT NOT NULL,
     description TEXT,
-    action_type TEXT NOT NULL,
-    action_value TEXT NOT NULL,
+    powershell_command TEXT NOT NULL,
     is_default BOOLEAN DEFAULT 0,
     FOREIGN KEY (setting_id) REFERENCES settings(id)
 );
@@ -112,29 +111,28 @@ DEFAULT_CATEGORIES = [
 
 # Predefined access methods
 DEFAULT_ACCESS_METHODS = [
-    (1, "Registry", "Modify Windows Registry settings"),
-    (2, "PowerShell", "Execute PowerShell commands"),
-    (3, "Control Panel", "Open specific Control Panel applets"),
-    (4, "Settings App", "Open the Windows Settings app"),
-    (5, "Group Policy", "Modify Local Group Policy settings")
+    (1, "PowerShell", "Execute PowerShell commands"),
+    (2, "Control Panel", "Open specific Control Panel applets"),
+    (3, "Settings App", "Open the Windows Settings app"),
+    (4, "Group Policy", "Modify Local Group Policy settings")
 ]
 
-# Sample settings data for initial population
+# Sample settings data for initial population - updated to use PowerShell commands
 SAMPLE_SETTINGS = [
-    # System category
+    # Night Light
     (1, "Night Light", "Reduces blue light emission at night", 2, 1, 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate",
-     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CloudStore\\Store\\DefaultAccount\\Current\\default$windows.data.bluelightreduction.bluelightreductionstate\\windows.data.bluelightreduction.bluelightreductionstate' -Name 'Data' -Value ([byte[]](0x43,0x42,0x01,0x00,0x0A,0x02,0x01,0x00,0x2A,0x06,0x24,0xA0,0x99,0x0E,0x01,0x00))",
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CloudStore\\Store\\DefaultAccount\\Current\\default$windows.data.bluelightreduction.bluelightreductionstate\\windows.data.bluelightreduction.bluelightreductionstate' -Name 'Data'",
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CloudStore\\Store\\DefaultAccount\\Current\\default$windows.data.bluelightreduction.bluelightreductionstate\\windows.data.bluelightreduction.bluelightreductionstate' -Name 'Data'",
      "desk.cpl", 
      "ms-settings:nightlight",
      "",
      "blue light,night mode,eye strain,display,color temperature",
      "reduce blue light,night shift,eye protection,sleep better"),
      
-    # Privacy category
-    (2, "Disable Advertising ID", "Prevents apps from using advertising ID", 4, 1,
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo",
-     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Value 0",
+    # Disable Advertising ID
+    (2, "Advertising ID", "Controls personalized ads using advertising ID", 4, 1,
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled'",
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled'",
      "",
      "ms-settings:privacy-general",
      "Computer Configuration\\Administrative Templates\\System\\User Profiles\\Turn off the advertising ID",
@@ -142,9 +140,9 @@ SAMPLE_SETTINGS = [
      "stop ad tracking,disable ads,privacy settings"),
      
     # Performance
-    (3, "Adjust for Best Performance", "Optimize visual effects for performance", 1, 1,
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects",
-     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting' -Value 2",
+    (3, "Visual Effects", "Optimize visual effects for performance", 14, 1,
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting'",
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting'",
      "sysdm.cpl",
      "",
      "",
@@ -153,50 +151,68 @@ SAMPLE_SETTINGS = [
      
     # Network
     (4, "Metered Connection", "Set network connection as metered", 3, 1,
-     r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultMediaCost",
-     "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\DefaultMediaCost' -Name '3' -Value 2",
+     "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\DefaultMediaCost' -Name '3'",
+     "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\DefaultMediaCost' -Name '3'",
      "",
      "ms-settings:network-wifi",
      "",
      "wifi,data usage,network,bandwidth",
-     "limit data usage,save bandwidth,reduce data")
+     "limit data usage,save bandwidth,reduce data"),
+     
+    # Dark Mode
+    (5, "Dark Mode", "Switch between light and dark theme", 5, 1,
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme'",
+     "Get-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme'",
+     "",
+     "ms-settings:personalization-colors",
+     "",
+     "theme,dark mode,light mode,personalization",
+     "dark theme,light theme,eye strain,appearance")
 ]
 
-# Sample setting actions
+# Sample setting actions - updated to use PowerShell commands
 SAMPLE_ACTIONS = [
     # Night Light
-    (1, 1, "Enable Night Light", "Turn on blue light reduction", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate=([byte[]](0x43,0x42,0x01,0x00,0x0A,0x02,0x01,0x00,0x2A,0x06,0x24,0xA0,0x99,0x0E,0x01,0x00))", 
+    (1, 1, "Enable Night Light", "Turn on blue light reduction", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CloudStore\\Store\\DefaultAccount\\Current\\default$windows.data.bluelightreduction.bluelightreductionstate\\windows.data.bluelightreduction.bluelightreductionstate' -Name 'Data' -Value ([byte[]](0x43,0x42,0x01,0x00,0x0A,0x02,0x01,0x00,0x2A,0x06,0x24,0xA0,0x99,0x0E,0x01,0x00))", 
      1),
-    (2, 1, "Disable Night Light", "Turn off blue light reduction", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate=([byte[]](0x43,0x42,0x01,0x00,0x0A,0x02,0x01,0x00,0x22,0x04,0x80,0x99,0x0E,0x00))", 
+    (2, 1, "Disable Night Light", "Turn off blue light reduction", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\CloudStore\\Store\\DefaultAccount\\Current\\default$windows.data.bluelightreduction.bluelightreductionstate\\windows.data.bluelightreduction.bluelightreductionstate' -Name 'Data' -Value ([byte[]](0x43,0x42,0x01,0x00,0x0A,0x02,0x01,0x00,0x22,0x04,0x80,0x99,0x0E,0x00))", 
      0),
     
     # Advertising ID
-    (3, 2, "Disable Advertising ID", "Turn off advertising ID", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo\Enabled=0", 
+    (3, 2, "Disable Advertising ID", "Turn off advertising ID", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Value 0", 
      1),
-    (4, 2, "Enable Advertising ID", "Turn on advertising ID", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo\Enabled=1", 
+    (4, 2, "Enable Advertising ID", "Turn on advertising ID", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Value 1", 
      0),
     
     # Performance
-    (5, 3, "Best Performance", "Optimize for performance", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\VisualFXSetting=2", 
+    (5, 3, "Best Performance", "Optimize for performance", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting' -Value 2", 
      1),
-    (6, 3, "Best Appearance", "Optimize for appearance", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\VisualFXSetting=1", 
+    (6, 3, "Best Appearance", "Optimize for appearance", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting' -Value 1", 
      0),
-    (7, 3, "Custom", "Custom visual effects settings", "registry", 
-     r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\VisualFXSetting=3", 
+    (7, 3, "Custom", "Custom visual effects settings", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting' -Value 3", 
      0),
     
     # Metered Connection
-    (8, 4, "Enable Metered Connection", "Set connection as metered", "registry", 
-     r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultMediaCost\3=2", 
+    (8, 4, "Enable Metered Connection", "Set connection as metered", 
+     "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\DefaultMediaCost' -Name '3' -Value 2", 
      1),
-    (9, 4, "Disable Metered Connection", "Set connection as non-metered", "registry", 
-     r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultMediaCost\3=1", 
+    (9, 4, "Disable Metered Connection", "Set connection as non-metered", 
+     "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\DefaultMediaCost' -Name '3' -Value 1", 
+     0),
+     
+    # Dark Mode
+    (10, 5, "Enable Dark Mode", "Switch to dark theme", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme' -Value 0; Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'SystemUsesLightTheme' -Value 0", 
+     1),
+    (11, 5, "Enable Light Mode", "Switch to light theme", 
+     "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme' -Value 1; Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'SystemUsesLightTheme' -Value 1", 
      0)
 ]
 

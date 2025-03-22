@@ -469,3 +469,22 @@ class SettingCard(QFrame):
             self.clicked.emit(self.setting_id)
         
         super().mouseReleaseEvent(event)
+    
+    def apply_consistent_styling(self):
+        """Apply consistent styling to the card"""
+        # Set consistent height
+        self.setMinimumHeight(120)
+        self.setMaximumHeight(160)
+        
+        # Set rounded corners and shadow
+        self.setStyleSheet("""
+            QFrame#setting-card {
+                border-radius: 10px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        
+        # Ensure buttons have consistent size
+        self.details_button.setFixedWidth(100)
+        self.action_button.setFixedWidth(100)

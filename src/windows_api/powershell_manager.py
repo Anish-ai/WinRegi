@@ -25,9 +25,12 @@ class PowerShellManager:
             Tuple of (success, stdout, stderr)
         """
         try:
+            # Log the command for debugging
+            print(f"Executing PowerShell command: {command}")
+            
             # Create a process to execute the PowerShell command
             process = subprocess.Popen(
-                [self.powershell_path, "-Command", command],
+                [self.powershell_path, "-ExecutionPolicy", "Bypass", "-NoProfile", "-Command", command],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -40,15 +43,24 @@ class PowerShellManager:
             # Check if the command was successful
             success = process.returncode == 0
             
+            # Log the command and result for debugging
+            print(f"PowerShell command result: {'Success' if success else 'Failed'}")
+            if stdout:
+                print(f"Output: {stdout}")
+            if stderr:
+                print(f"Error: {stderr}")
+            
             return success, stdout, stderr
             
         except subprocess.TimeoutExpired:
             # Kill the process if it times out
             process.kill()
             stdout, stderr = process.communicate()
+            print(f"PowerShell command timed out after {timeout} seconds")
             return False, stdout, f"Command timed out after {timeout} seconds"
         
         except Exception as e:
+            print(f"Exception executing PowerShell command: {str(e)}")
             return False, "", str(e)
     
     def execute_script(self, script_content: str, timeout: int = 60) -> Tuple[bool, str, str]:

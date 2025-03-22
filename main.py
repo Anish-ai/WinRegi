@@ -207,6 +207,25 @@ def setup_file_watcher(directories):
     observer.start()
     return observer
 
+def run_migrations():
+    """Run database migrations if needed"""
+    try:
+        migrations_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations")
+        if os.path.exists(migrations_dir):
+            # Run update_to_powershell.py migration
+            powershell_migration = os.path.join(migrations_dir, "update_to_powershell.py")
+            if os.path.exists(powershell_migration):
+                print("Running PowerShell migration...")
+                subprocess.run([sys.executable, powershell_migration], check=True)
+                
+            # Run fix_powershell_commands.py migration
+            fix_commands_migration = os.path.join(migrations_dir, "fix_powershell_commands.py")
+            if os.path.exists(fix_commands_migration):
+                print("Running PowerShell command fixes...")
+                subprocess.run([sys.executable, fix_commands_migration], check=True)
+    except Exception as e:
+        print(f"Error running migrations: {e}")
+
 def main():
     """Initialize and run the WinRegi application with hot reload"""
     global global_window, global_app
@@ -231,6 +250,9 @@ def main():
         except Exception as e:
             print(f"Error running pre-startup: {e}")
     
+    # Run database migrations
+    run_migrations()
+    
     # Set up environment
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     
@@ -239,6 +261,16 @@ def main():
     global_app = app
     app.setApplicationName("WinRegi")
     app.setOrganizationName("WinRegi")
+    
+    # Load custom stylesheet if available
+    custom_style_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "custom_styles.css")
+    if os.path.exists(custom_style_path):
+        try:
+            with open(custom_style_path, 'r') as f:
+                custom_style = f.read()
+                app.setStyleSheet(custom_style)
+        except Exception as e:
+            print(f"Error loading custom stylesheet: {e}")
     
     # Show splash screen
     splash = show_splash_screen(args)

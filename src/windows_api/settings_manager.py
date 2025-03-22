@@ -1,9 +1,8 @@
 """
 Windows Settings manager for WinRegi application
-Orchestrates registry, PowerShell, and direct settings modifications
+Orchestrates PowerShell commands for settings modifications
 """
 from typing import Dict, Any, List, Tuple, Optional
-from .registry_manager import RegistryManager
 from .powershell_manager import PowerShellManager
 
 class SettingsManager:
@@ -11,7 +10,6 @@ class SettingsManager:
     
     def __init__(self):
         """Initialize Settings Manager"""
-        self.registry_manager = RegistryManager()
         self.powershell_manager = PowerShellManager()
     
     def apply_setting_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
@@ -23,94 +21,50 @@ class SettingsManager:
         Returns:
             Result dictionary with status and message
         """
-        action_type = action.get('action_type', '').lower()
-        action_value = action.get('action_value', '')
+        powershell_command = action.get('powershell_command', '')
+        
+        if not powershell_command:
+            print(f"No PowerShell command provided for action: {action.get('name', 'Unknown')}")
+            return {
+                'success': False,
+                'message': 'No PowerShell command provided for this action',
+                'requires_admin': False
+            }
         
         try:
-            if action_type == 'registry':
-                # Execute registry action
-                result = self.registry_manager.execute_registry_action(action_value)
-                
-                # Check if admin rights are required
-                if result.get('requires_admin', False):
+            print(f"Executing action: {action.get('name', 'Unknown')}")
+            print(f"PowerShell command: {powershell_command}")
+            
+            # Check if PowerShell command needs admin privileges
+            if any(cmd in powershell_command.lower() for cmd in ['hklm:', 'restart-service', 'stop-service', 'start-service']):
+                if not self.is_admin():
+                    print("Admin privileges required but not available")
                     return {
                         'success': False,
-                        'message': result.get('message', 'Administrator privileges required'),
+                        'message': 'Administrator privileges required for this PowerShell command',
                         'requires_admin': True
                     }
-                    
-                return {
-                    'success': result.get('success', False),
-                    'message': result.get('message', 'Registry modification completed'),
-                    'requires_admin': False
-                }
-                
-            elif action_type == 'powershell':
-                # Check if PowerShell command needs admin privileges
-                if 'runas' in action_value.lower() or any(cmd in action_value.lower() for cmd in ['restart-service', 'stop-service', 'start-service']):
-                    if not self.registry_manager.is_admin:
-                        return {
-                            'success': False,
-                            'message': 'Administrator privileges required for this PowerShell command',
-                            'requires_admin': True
-                        }
-                
-                # Execute PowerShell command
-                success, stdout, stderr = self.powershell_manager.execute_command(action_value)
-                
-                return {
-                    'success': success,
-                    'message': stdout if success else stderr,
-                    'requires_admin': False
-                }
-                
-            elif action_type == 'control_panel':
-                # Open Control Panel applet
-                success = self.powershell_manager.open_control_panel_item(action_value)
-                
-                return {
-                    'success': success,
-                    'message': f'Opened Control Panel: {action_value}' if success else f'Failed to open Control Panel: {action_value}',
-                    'requires_admin': False
-                }
-                
-            elif action_type == 'ms_settings':
-                # Open Settings app page
-                success = self.powershell_manager.open_settings_page(action_value)
-                
-                return {
-                    'success': success,
-                    'message': f'Opened Settings: {action_value}' if success else f'Failed to open Settings: {action_value}',
-                    'requires_admin': False
-                }
-                
-            elif action_type == 'group_policy':
-                # Check for admin privileges as Group Policy Editor requires them
-                if not self.registry_manager.is_admin:
-                    return {
-                        'success': False,
-                        'message': 'Administrator privileges required to open Group Policy Editor',
-                        'requires_admin': True
-                    }
-                    
-                # Not directly implemented due to Group Policy API complexity
-                # Instead, open Group Policy Editor
-                success = self.powershell_manager.execute_command(f"Start-Process gpedit.msc")
-                
-                return {
-                    'success': success,
-                    'message': 'Opened Group Policy Editor' if success else 'Failed to open Group Policy Editor',
-                    'requires_admin': False
-                }
-                
-            else:
-                return {
-                    'success': False,
-                    'message': f'Unsupported action type: {action_type}',
-                    'requires_admin': False
-                }
+            
+            # Execute PowerShell command
+            success, stdout, stderr = self.powershell_manager.execute_command(powershell_command)
+            
+            # Log the result
+            print(f"Command execution result: {'Success' if success else 'Failed'}")
+            if stdout:
+                print(f"Output: {stdout}")
+            if stderr:
+                print(f"Error: {stderr}")
+            
+            return {
+                'success': success,
+                'message': stdout if success else stderr,
+                'requires_admin': False
+            }
                 
         except Exception as e:
+            print(f"Error applying setting: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
                 'message': f'Error applying setting: {str(e)}',
@@ -127,60 +81,31 @@ class SettingsManager:
             Status dictionary with current value and state
         """
         try:
-            # Try to determine the current state based on access method
-            access_method = setting.get('access_method_id')
+            # Get the PowerShell command to check status
+            powershell_get_command = setting.get('powershell_get_command')
             
-            if access_method == 1:  # Registry
-                registry_path = setting.get('registry_path')
-                if registry_path:
-                    # Parse the registry path to extract value name
-                    root_key, subkey_path, value_name = self.registry_manager.parse_registry_path(registry_path)
-                    
-                    if value_name:
-                        # Read the registry value
-                        value = self.registry_manager.read_registry_value(registry_path)
-                        
-                        if value:
-                            return {
-                                'current_value': value[0],
-                                'value_type': value[1],
-                                'exists': True,
-                                'message': 'Registry value exists'
-                            }
-                        else:
-                            return {
-                                'current_value': None,
-                                'value_type': None,
-                                'exists': False,
-                                'message': 'Registry value does not exist'
-                            }
+            if not powershell_get_command:
+                return {
+                    'current_value': None,
+                    'exists': None,
+                    'message': 'No PowerShell command available to check status'
+                }
             
-            elif access_method == 2:  # PowerShell
-                # For PowerShell-based settings, we need a specific command to check status
-                # This is a simplified implementation
-                powershell_command = setting.get('powershell_command')
-                if powershell_command and 'Get-' in powershell_command:
-                    success, output, _ = self.powershell_manager.execute_command(powershell_command)
-                    
-                    if success:
-                        return {
-                            'current_value': output.strip(),
-                            'exists': True,
-                            'message': 'PowerShell command executed successfully'
-                        }
-                    else:
-                        return {
-                            'current_value': None,
-                            'exists': False,
-                            'message': 'PowerShell command failed'
-                        }
+            # Execute the PowerShell command
+            success, stdout, stderr = self.powershell_manager.execute_command(powershell_get_command)
             
-            # For other access methods, we can't easily determine status
-            return {
-                'current_value': None,
-                'exists': None,
-                'message': 'Status determination not supported for this setting'
-            }
+            if success:
+                return {
+                    'current_value': stdout.strip(),
+                    'exists': True,
+                    'message': 'PowerShell command executed successfully'
+                }
+            else:
+                return {
+                    'current_value': None,
+                    'exists': False,
+                    'message': f'PowerShell command failed: {stderr}'
+                }
             
         except Exception as e:
             return {
@@ -212,6 +137,14 @@ class SettingsManager:
         # If no default action, return all actions
         return all_actions
     
+    def is_admin(self) -> bool:
+        """Check if the application is running with administrator privileges
+        
+        Returns:
+            True if running as administrator, False otherwise
+        """
+        return self.powershell_manager.is_admin()
+    
     def set_windows_theme(self, theme: str) -> Dict[str, Any]:
         """Set Windows theme to light or dark
         
@@ -228,119 +161,58 @@ class SettingsManager:
                 'requires_admin': False
             }
         
-        # Check if admin is required to restart explorer
-        requires_admin = False
+        # Create PowerShell command to set theme
+        theme_value = 1 if theme == 'light' else 0
+        powershell_command = f"""
+        # Set app theme
+        Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize" -Name "AppsUseLightTheme" -Value {theme_value} -Type DWord
         
-        # Apply the theme change
-        success, stdout, stderr = self.powershell_manager.set_windows_theme(theme)
+        # Set system theme
+        Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize" -Name "SystemUsesLightTheme" -Value {theme_value} -Type DWord
+        """
+        
+        # Execute PowerShell command
+        success, stdout, stderr = self.powershell_manager.execute_command(powershell_command)
         
         if not success and "Access is denied" in stderr:
-            requires_admin = True
             return {
                 'success': False,
-                'message': 'Administrator privileges required to restart Explorer',
-                'requires_admin': requires_admin
+                'message': 'Administrator privileges required to set theme',
+                'requires_admin': True
             }
         
         return {
             'success': success,
             'message': f'Windows {theme} theme applied successfully' if success else f'Failed to apply {theme} theme: {stderr}',
-            'requires_admin': requires_admin
+            'requires_admin': False
         }
     
-    def analyze_system_settings(self) -> Dict[str, Any]:
-        """Analyze system settings to provide optimization recommendations
+    def toggle_night_light(self, enable: bool) -> Dict[str, Any]:
+        """Toggle Night Light feature
         
+        Args:
+            enable: True to enable Night Light, False to disable
+            
         Returns:
-            Dictionary with analysis results
+            Dictionary with status and message
         """
-        recommendations = []
-        
-        # Check performance settings
-        success, stdout, _ = self.powershell_manager.execute_command(
-            "(Get-CimInstance -ClassName Win32_OperatingSystem).Name"
-        )
-        
-        if success:
-            windows_version = stdout.strip()
-            
-            # Add system info
-            recommendations.append({
-                'category': 'System',
-                'name': 'Windows Version',
-                'value': windows_version,
-                'recommendation': None
-            })
-        
-        # Check visual effects setting
         try:
-            visual_fx = self.registry_manager.read_registry_value(
-                r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects:VisualFXSetting"
-            )
+            # The most reliable way is to use the Settings app
+            import subprocess
             
-            if visual_fx:
-                value, _ = visual_fx
-                if value != 2:  # 2 is best performance
-                    recommendations.append({
-                        'category': 'Performance',
-                        'name': 'Visual Effects',
-                        'value': 'Not optimized for performance',
-                        'recommendation': 'Set visual effects to "Best performance" to improve system responsiveness'
-                    })
-        except:
-            pass
-        
-        # Check startup programs
-        success, stdout, _ = self.powershell_manager.execute_command(
-            "Get-CimInstance -ClassName Win32_StartupCommand | Measure-Object | Select-Object -ExpandProperty Count"
-        )
-        
-        if success:
-            try:
-                startup_count = int(stdout.strip())
-                if startup_count > 10:
-                    recommendations.append({
-                        'category': 'Performance',
-                        'name': 'Startup Programs',
-                        'value': f'{startup_count} programs',
-                        'recommendation': 'Reduce the number of startup programs to improve boot time'
-                    })
-            except:
-                pass
-        
-        # Check power plan
-        success, stdout, _ = self.powershell_manager.execute_command(
-            "powercfg /getactivescheme"
-        )
-        
-        if success:
-            if "Power saver" in stdout:
-                recommendations.append({
-                    'category': 'Power',
-                    'name': 'Power Plan',
-                    'value': 'Power saver',
-                    'recommendation': 'Switch to "Balanced" or "High performance" power plan for better performance'
-                })
-        
-        # Check theme settings
-        success, value_data = self.powershell_manager.get_registry_value(
-            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-            "AppsUseLightTheme"
-        )
-        
-        if success:
-            try:
-                light_theme = int(value_data.strip()) == 1
-                recommendations.append({
-                    'category': 'Display',
-                    'name': 'Theme',
-                    'value': 'Light theme' if light_theme else 'Dark theme',
-                    'recommendation': 'Consider using dark theme to reduce eye strain and save battery on OLED displays' if light_theme else None
-                })
-            except:
-                pass
-        
-        return {
-            'recommendations': recommendations,
-            'analyzed_at': '2023-01-01 00:00:00'  # This would be current time in a real app
-        }
+            # Open Night Light settings
+            subprocess.Popen(["explorer.exe", "ms-settings:nightlight"])
+            
+            # Inform the user what to do
+            return {
+                'success': True,
+                'message': f"The Night Light settings page has been opened. Please {'enable' if enable else 'disable'} Night Light manually.",
+                'requires_manual_action': True
+            }
+        except Exception as e:
+            print(f"Error toggling Night Light: {e}")
+            return {
+                'success': False,
+                'message': f"Failed to toggle Night Light: {str(e)}",
+                'requires_admin': False
+            }

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import (
     Qt, pyqtSignal, QSize, QPropertyAnimation, 
-    QEasingCurve, QTimer, QRect, QPoint
+    QEasingCurve, QTimer, QRect, QPoint, pyqtProperty
 )
 from PyQt5.QtGui import QIcon, QColor, QPainter, QPainterPath, QFont
 
@@ -30,12 +30,17 @@ class AnimatedButton(QPushButton):
         
         # Initialize animation properties
         self._scale_factor = 1.0
-        self._is_pressed = False
+        self._hover_state = 0.0
         
         # Create press animation
         self._press_animation = QPropertyAnimation(self, b"scale_factor")
         self._press_animation.setDuration(100)
         self._press_animation.setEasingCurve(QEasingCurve.OutQuad)
+        
+        # Create hover animation
+        self._hover_animation = QPropertyAnimation(self, b"hover_state")
+        self._hover_animation.setDuration(150)
+        self._hover_animation.setEasingCurve(QEasingCurve.InOutQuad)
     
     def get_scale_factor(self):
         """Get scale factor property
@@ -56,6 +61,26 @@ class AnimatedButton(QPushButton):
     
     # Define property for animation
     scale_factor = property(get_scale_factor, set_scale_factor)
+    
+    def get_hover_state(self):
+        """Get hover state property
+        
+        Returns:
+            Current hover state
+        """
+        return self._hover_state
+    
+    def set_hover_state(self, state):
+        """Set hover state property
+        
+        Args:
+            state: New hover state
+        """
+        self._hover_state = state
+        self.update()
+    
+    # Define property for animation
+    hover_state = pyqtProperty(float, get_hover_state, set_hover_state)
     
     def enterEvent(self, event):
         """Handle mouse enter event

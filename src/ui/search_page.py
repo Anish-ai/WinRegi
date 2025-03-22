@@ -63,10 +63,10 @@ class SearchPage(QWidget):
         results_layout = QVBoxLayout()
         results_layout.setContentsMargins(0, 20, 0, 0)
         
-        # Create results header
+        # Create results header with animation
         self.results_header = QLabel("Recommended Settings & Commands")
         self.results_header.setObjectName("results-header")
-        self.results_header.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;")
+        self.results_header.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #28C058;")
         results_layout.addWidget(self.results_header)
         
         # Create results container
@@ -88,23 +88,34 @@ class SearchPage(QWidget):
         # Show initial recommendations
         self.show_recommendations()
     
-    def on_search(self, query):
-        """Handle search request
+    def on_search(self):
+        """Handle search button click"""
+        # Get search query
+        query = self.search_bar.get_query()
         
-        Args:
-            query: Search query
-        """
+        if not query:
+            return
+        
         # Update header
-        self.results_header.setText(f"Search Results for: {query}")
+        self.results_header.setText(f"Search Results for '{query}'")
         
-        # Clear previous results
-        self.clear_results()
-        
-        # Perform search
-        self.search_results = self.search_engine.search(query)
-        
-        # Show results
-        self.show_results(self.search_results)
+        try:
+            # Get search results
+            results = self.search_engine.search(query)
+            
+            # Show results
+            self.show_results(results)
+        except Exception as e:
+            print(f"Error during search: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Show error message
+            self.clear_results()
+            error_label = QLabel(f"An error occurred during search: {str(e)}")
+            error_label.setStyleSheet("color: red;")
+            error_label.setWordWrap(True)
+            self.results_layout.addWidget(error_label)
     
     def show_recommendations(self):
         """Show recommended settings"""
@@ -118,45 +129,37 @@ class SearchPage(QWidget):
         """Show search results
         
         Args:
-            results: List of result dictionaries
+            results: List of search results
         """
         # Clear previous results
         self.clear_results()
         
         if not results:
             # Show no results message
-            no_results = QLabel("No settings or commands found. Try a different search query.")
+            no_results = QLabel("No results found. Try a different search term.")
             no_results.setAlignment(Qt.AlignCenter)
             no_results.setStyleSheet("color: #777; padding: 20px;")
             self.results_layout.addWidget(no_results)
             return
         
         # Group results by type
-        settings = []
-        commands = []
+        settings_results = [r for r in results if r.get('result_type', '') == 'setting']
+        command_results = [r for r in results if r.get('result_type', '') == 'command']
         
-        for result in results:
-            result_type = result.get('result_type', 'setting')
-            if result_type == 'setting':
-                settings.append(result)
-            elif result_type == 'command':
-                commands.append(result)
-        
-        # Add settings section if we have settings
-        if settings:
-            # Add settings header if we also have commands
-            if commands:
-                settings_header = QLabel("Settings")
-                settings_header.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin-top: 10px;")
-                self.results_layout.addWidget(settings_header)
+        # Show settings results
+        if settings_results:
+            # Add settings header
+            settings_header = QLabel("Settings")
+            settings_header.setObjectName("results-section-header")
+            settings_header.setStyleSheet("font-size: 16px; font-weight: bold; margin-top: 10px;")
+            self.results_layout.addWidget(settings_header)
             
-            # Add setting cards for each setting result
-            for result in settings:
-                # Create setting card
+            # Add setting cards
+            for result in settings_results:
                 setting_card = SettingCard(
                     result['id'],
                     result['name'],
-                    result['description'],
+                    result.get('description', ''),
                     result.get('category_name', '')
                 )
                 
@@ -167,39 +170,35 @@ class SearchPage(QWidget):
                 # Add to layout
                 self.results_layout.addWidget(setting_card)
         
-        # Add commands section if we have commands
-        if commands:
-            # Add commands header if we also have settings
-            if settings:
-                commands_header = QLabel("Commands")
-                commands_header.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin-top: 20px;")
-                self.results_layout.addWidget(commands_header)
+        # Show command results
+        if command_results:
+            # Add commands header
+            commands_header = QLabel("Commands")
+            commands_header.setObjectName("results-section-header")
+            commands_header.setStyleSheet("font-size: 16px; font-weight: bold; margin-top: 20px;")
+            self.results_layout.addWidget(commands_header)
             
-            # Add command cards for each command result
-            for result in commands:
-                # Create command card
+            # Add command cards
+            for result in command_results:
+                # Create a setting card for the command (reusing the component)
                 command_card = SettingCard(
                     result['id'],
                     result['name'],
-                    result['description'],
-                    result.get('category_name', '')
+                    result.get('description', ''),
+                    result.get('category_name', 'Command')
                 )
                 
-                # Set custom styles for command cards
-                command_card.setProperty("class", "command-card")
-                command_card.setStyleSheet("background-color: #f0f8ff;")
-                
-                # Change the action button text to "Execute"
+                # Set action button text to "Execute" for commands
                 command_card.action_button.setText("Execute")
                 
-                # Connect signals
+                # Connect signals - use command-specific handlers
                 command_card.clicked.connect(self.on_command_selected)
                 command_card.action_requested.connect(self.on_command_action)
                 
                 # Add to layout
                 self.results_layout.addWidget(command_card)
         
-        # Add stretch to push cards to the top
+        # Add stretch to push results to the top
         self.results_layout.addStretch()
     
     def clear_results(self):
@@ -273,12 +272,15 @@ class SearchPage(QWidget):
         if result.get('success', False):
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Operation Successful")
+            msg_box.setText(f"Action '{default_action['name']}' completed successfully.")
+            if result.get('message'):
+                msg_box.setDetailedText(result.get('message'))
         else:
             msg_box.setIcon(QMessageBox.Warning)
             msg_box.setWindowTitle("Operation Failed")
-        
-        # Set text
-        msg_box.setText(result.get('message', 'Operation completed'))
+            msg_box.setText(f"Action '{default_action['name']}' failed.")
+            if result.get('message'):
+                msg_box.setDetailedText(result.get('message'))
         
         # Add buttons
         msg_box.setStandardButtons(QMessageBox.Ok)
@@ -301,22 +303,38 @@ class SearchPage(QWidget):
         Args:
             command_id: Command ID
         """
-        if not self.command_manager:
-            # Command manager not available
-            QMessageBox.warning(
-                self,
-                "Error",
-                "Command execution is not available."
-            )
-            return
+        print(f"Executing command with ID: {command_id}")
+        
+        if not hasattr(self, 'command_manager') or not self.command_manager:
+            # Try to create command manager if it doesn't exist
+            try:
+                from ..windows_api.command_manager import CommandManager
+                self.command_manager = CommandManager(self.db_manager)
+            except ImportError as e:
+                print(f"Error importing CommandManager: {e}")
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "Command execution is not available."
+                )
+                return
         
         # Get command details
         command = self.db_manager.get_command_by_id(command_id)
         if not command:
+            print(f"Command with ID {command_id} not found")
             return
+        
+        print(f"Executing command: {command['name']}")
+        print(f"Command type: {command['command_type']}")
+        print(f"Command value: {command['command_value']}")
         
         # Execute command
         success, output = self.command_manager.execute_command(command_id)
+        
+        print(f"Command execution result: {'Success' if success else 'Failed'}")
+        if output:
+            print(f"Output: {output}")
         
         # Show result based on command type
         if command["command_type"] in ["powershell", "batch"]:
@@ -342,4 +360,10 @@ class SearchPage(QWidget):
                     self,
                     "Command Failed",
                     f"Command '{command['name']}' failed to execute:\n{output}"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Command Executed",
+                    f"Command '{command['name']}' executed successfully."
                 )
