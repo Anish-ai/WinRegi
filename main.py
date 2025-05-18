@@ -138,8 +138,19 @@ def reload_ui():
             geometry = global_window.geometry()
             
             # Reload the main window module
+            # from src.ui import main_window
+            # importlib.reload(main_window)
+            # Reload all modules in the src directory and its subdirectories
+            for module_name, module in list(sys.modules.items()):
+                if module_name.startswith('src.') and hasattr(module, '__file__'):
+                    try:
+                        print(f"Reloading module: {module_name}")
+                        importlib.reload(module)
+                    except Exception as e:
+                        print(f"Error reloading {module_name}: {e}")
+            
+            # Import main_window after reloading all modules
             from src.ui import main_window
-            importlib.reload(main_window)
             
             # Create a new main window instance
             old_window = global_window

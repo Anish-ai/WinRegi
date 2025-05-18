@@ -222,9 +222,12 @@ class SidebarNavigation(QWidget):
         theme_label = QLabel("Application Theme:")
         theme_layout.addWidget(theme_label)
         
+        # Get the main window instance
+        main_window = self.window()
+        
         theme_toggle = ThemeToggleSwitch()
-        theme_toggle.setChecked(self.parent().theme_manager.current_theme == "dark")
-        theme_toggle.toggled.connect(self.parent().toggle_theme)
+        theme_toggle.setChecked(main_window.theme_manager.current_theme == "dark")
+        theme_toggle.toggled.connect(main_window.toggle_theme)
         theme_layout.addWidget(theme_toggle)
         
         layout.addWidget(theme_container)
