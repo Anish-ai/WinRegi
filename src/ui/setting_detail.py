@@ -182,7 +182,7 @@ class SettingDetailPage(QWidget):
         self.access_method_label.setText(f"Access Method: {setting['access_method_name']}")
         
         # Update details
-        self.registry_path_label.setText(setting['registry_path'] if setting['registry_path'] else "N/A")
+        self.registry_path_label.setText("N/A")
         self.powershell_label.setText(setting['powershell_command'] if setting['powershell_command'] else "N/A")
         self.control_panel_label.setText(setting['control_panel_path'] if setting['control_panel_path'] else "N/A")
         self.settings_app_label.setText(setting['ms_settings_path'] if setting['ms_settings_path'] else "N/A")

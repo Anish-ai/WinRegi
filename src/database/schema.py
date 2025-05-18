@@ -221,6 +221,6 @@ SAMPLE_COMMANDS = [
     (1, "Open Task Manager", "Quickly access Windows Task Manager", "system", "taskmgr.exe", 12, "task manager,processes,performance"),
     (2, "Clear Temp Files", "Remove temporary files to free disk space", "powershell", 
      "Remove-Item -Path \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue", 15, "cleanup,disk space,temporary files"),
-    (3, "Check Disk Space", "Display available disk space", "powershell", 
+    (3, "Check Diss Space", "Display available disk space", "powershell", 
      "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Free (GB)';Expression={[math]::Round($_.Free / 1GB, 2)}}, @{Name='Used (GB)';Expression={[math]::Round(($_.Used) / 1GB, 2)}}", 14, "disk space,storage,drive")
 ]

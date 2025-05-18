@@ -87,7 +87,7 @@ class DatabaseManager:
                 self.cursor.executemany(
                     """INSERT INTO settings 
                        (id, name, description, category_id, access_method_id, 
-                        registry_path, powershell_command, control_panel_path, 
+                        powershell_command, powershell_get_command, control_panel_path, 
                         ms_settings_path, group_policy_path, tags, keywords)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     SAMPLE_SETTINGS
@@ -99,8 +99,8 @@ class DatabaseManager:
             if self.cursor.fetchone()[0] == 0:
                 self.cursor.executemany(
                     """INSERT INTO setting_actions 
-                       (id, setting_id, name, description, action_type, action_value, is_default)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                       (id, setting_id, name, description, powershell_command, is_default)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
                     SAMPLE_ACTIONS
                 )
                 self.conn.commit()
