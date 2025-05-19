@@ -218,6 +218,57 @@ def setup_file_watcher(directories):
     observer.start()
     return observer
 
+def setup_debug_tools(window):
+    """Set up debugging tools for development mode"""
+    print("Setting up debug tools...")
+    
+    from PyQt5.QtWidgets import QShortcut
+    from PyQt5.QtGui import QKeySequence
+
+    # Add performance monitor
+    from src.ui.performance_monitor import PerformanceMonitor
+    perf_monitor = PerformanceMonitor(window)
+    perf_shortcut = QShortcut(QKeySequence("Ctrl+P"), window)
+    perf_shortcut.activated.connect(lambda: perf_monitor.setVisible(not perf_monitor.isVisible()))
+    window._perf_monitor = perf_monitor
+    print(" - Performance Monitor: Press Ctrl+P to toggle")
+
+    try:
+        # Import debug tools
+        from src.ui.debug_console import DebugConsole
+        from src.ui.widget_inspector import WidgetInspector
+        
+        # Add debug console
+        console = DebugConsole(window)
+        window.addDockWidget(Qt.BottomDockWidgetArea, console)
+        console.hide()  # Hidden by default
+        console.install_redirector()
+        
+        # Add keyboard shortcut to toggle console (Ctrl+`)
+        console_shortcut = QShortcut(QKeySequence("Ctrl+`"), window)
+        console_shortcut.activated.connect(lambda: console.setVisible(not console.isVisible()))
+        
+        # Add widget inspector
+        inspector = WidgetInspector(window)
+        inspector_shortcut = QShortcut(QKeySequence("Ctrl+I"), window)
+        inspector_shortcut.activated.connect(inspector.toggle)
+        
+        # Store references to prevent garbage collection
+        window._debug_console = console
+        window._widget_inspector = inspector
+        
+        # Add debug menu AFTER all tools are initialized
+        if hasattr(window, 'add_debug_menu'):
+            window.add_debug_menu()
+        
+        print("Debug tools initialized:")
+        print(" - Debug Console: Press Ctrl+` to toggle")
+        print(" - Widget Inspector: Press Ctrl+I to activate")
+        
+    except Exception as e:
+        print(f"Error setting up debug tools: {e}")
+        traceback.print_exc()
+
 def run_migrations():
     """Run database migrations if needed"""
     try:
@@ -315,6 +366,9 @@ def main():
     
     # Create main window
     global_window = MainWindow(is_admin=admin_status)
+
+    if args.dev:
+        setup_debug_tools(global_window)
     
     # Ensure minimum splash time and then show main window
     def show_main():
@@ -369,10 +423,14 @@ def show_status_notifications(admin_status, args):
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Information)
         msg_box.setWindowTitle("Development Mode")
-        msg_box.setText(f"WinRegi is running in development mode with hot reload {reload_status}.")
+        msg_box.setText(f"WinRegi is running in development mode with debug tools.")
         msg_box.setInformativeText(
-            "UI components will automatically reload when Python files are modified.\n"
-            "Note: Some changes may require a full application restart.\n\n"
+            "Available debug tools:\n"
+            " - Debug Console: Press Ctrl+` to toggle\n"
+            " - Widget Inspector: Press Ctrl+I to activate\n"
+            " - Performance Monitor: Press Ctrl+P to toggle\n"
+            " - Force UI Reload: Press F5\n\n"
+            f"Hot reload is {reload_status}\n"
             f"Admin privileges: {'Yes' if admin_status else 'No'}\n"
             f"To run without admin elevation, use: --dev --no-admin"
         )

@@ -447,6 +447,39 @@ class MainWindow(QMainWindow):
         
         # Set central widget
         self.setCentralWidget(central_widget)
+
+    def add_debug_menu(self):
+        """Add debug menu for development mode"""
+        from PyQt5.QtWidgets import QMenu, QAction
+        
+        debug_menu = QMenu("Debug", self)
+        self.menuBar().addMenu(debug_menu)
+        
+        # Add actions
+        toggle_console = QAction("Toggle Debug Console", self)
+        toggle_console.setShortcut("Ctrl+`")
+        toggle_console.triggered.connect(lambda: self._debug_console.setVisible(
+            not self._debug_console.isVisible()))
+        
+        toggle_inspector = QAction("Toggle Widget Inspector", self)
+        toggle_inspector.setShortcut("Ctrl+I")
+        toggle_inspector.triggered.connect(self._widget_inspector.toggle)
+        
+        toggle_perf = QAction("Toggle Performance Monitor", self)
+        toggle_perf.setShortcut("Ctrl+P")
+        toggle_perf.triggered.connect(lambda: self._perf_monitor.setVisible(
+            not self._perf_monitor.isVisible()))
+        
+        reload_ui = QAction("Force UI Reload", self)
+        reload_ui.setShortcut("F5")
+        reload_ui.triggered.connect(lambda: reload_signaler.reload_signal.emit())
+        
+        # Add actions to menu
+        debug_menu.addAction(toggle_console)
+        debug_menu.addAction(toggle_inspector)
+        debug_menu.addAction(toggle_perf)
+        debug_menu.addSeparator()
+        debug_menu.addAction(reload_ui)
     
     def create_header(self) -> QWidget:
         """Create header widget with modern glassmorphism effect

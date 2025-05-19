@@ -60,7 +60,7 @@ class AnimatedButton(QPushButton):
         self.update()
     
     # Define property for animation
-    scale_factor = property(get_scale_factor, set_scale_factor)
+    scale_factor = pyqtProperty(float, get_scale_factor, set_scale_factor)
     
     def get_hover_state(self):
         """Get hover state property
@@ -219,7 +219,7 @@ class ExampleButton(QPushButton):
     
     # Define property for animation - using a different name from the instance variable 
     # to avoid recursion
-    hover_value = property(get_hover_value, set_hover_value)
+    hover_value = pyqtProperty(float, get_hover_value, set_hover_value)
     
     def enterEvent(self, event):
         """Handle mouse enter event

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import (
     Qt, pyqtSignal, QSize, QPropertyAnimation, 
-    QEasingCurve, QTimer, QRect, QPoint
+    QEasingCurve, QTimer, QRect, QPoint, pyqtProperty
 )
 from PyQt5.QtGui import QIcon, QPixmap, QColor, QFont, QPainter, QPainterPath
 
@@ -60,7 +60,7 @@ class AnimatedButton(QPushButton):
         self.update()
     
     # Define property for scale animation
-    scale_factor = property(get_scale_factor, set_scale_factor)
+    scale_factor = pyqtProperty(float, get_scale_factor, set_scale_factor)
     
     def get_hover_opacity(self):
         """Get hover opacity property
@@ -80,7 +80,7 @@ class AnimatedButton(QPushButton):
         self.update()
     
     # Define property for hover animation
-    hover_opacity = property(get_hover_opacity, set_hover_opacity)
+    hover_opacity = pyqtProperty(float, get_hover_opacity, set_hover_opacity)
     
     def enterEvent(self, event):
         """Handle mouse enter event
@@ -228,6 +228,9 @@ class SettingCard(QFrame):
         # Initialize animation properties
         self._hover_state = 0.0
         self._y_offset = 0.0
+
+        # Store the original y position
+        self._original_y = None
         
         # Create hover animation
         self._hover_animation = QPropertyAnimation(self, b"hover_state")
@@ -267,7 +270,7 @@ class SettingCard(QFrame):
         self.update()
     
     # Define property for hover animation
-    hover_state = property(get_hover_state, set_hover_state)
+    hover_state = pyqtProperty(float, get_hover_state, set_hover_state)
     
     def get_y_offset(self):
         """Get Y offset property
@@ -287,11 +290,15 @@ class SettingCard(QFrame):
         self._y_offset = offset
         offset = int(offset)
         
-        # Apply offset transform by moving the widget
-        self.move(self.x(), self.y() - offset)
+        # Store original position if not already stored
+        if self._original_y is None:
+            self._original_y = self.y()
+        
+        # Apply offset transform by moving the widget relative to original position
+        self.move(self.x(), self._original_y - offset)
     
     # Define property for elevation animation
-    y_offset = property(get_y_offset, set_y_offset)
+    y_offset = pyqtProperty(float, get_y_offset, set_y_offset)
     
     def init_ui(self):
         """Initialize user interface"""
