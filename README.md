@@ -1,6 +1,6 @@
 <p align="start">
   <img src="https://i.ibb.co/v706hBb/Frame-1.png" alt="WinRegi Logo" width="600"/>
-</p>
+</p> 
 
 # AI-Powered Windows Settings Explorer (WinRegi)
 
